@@ -1,7 +1,5 @@
 {
-  "buildCommand": "echo ok",
   "installCommand": "npm install",
-  "outputDirectory": "public",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/handler" }
   ]
