@@ -1,4 +1,4 @@
-import type { Database } from "bun:sqlite";
+import { Pool } from "pg";
 import { specialCategories } from "./data";
 
 const GROUPS = "ABCDEFGHIJKL".split("");
@@ -12,45 +12,30 @@ async function getTransporter() {
   if (!user || !pass) return null;
   try {
     const nm = await import("nodemailer");
-    _transporter = nm.default.createTransport({
-      service: "gmail",
-      auth: { user, pass },
-    });
+    _transporter = nm.default.createTransport({ service: "gmail", auth: { user, pass } });
     return _transporter;
   } catch {
     return null;
   }
 }
 
-export async function sendSubmissionEmail(
-  db: Database,
-  userId: number,
-  userName: string,
-  userEmail: string
-): Promise<void> {
+export async function sendSubmissionEmail(pool: Pool, userId: number, userName: string, userEmail: string): Promise<void> {
   const t = await getTransporter();
-  if (!t) {
-    console.log(`[E-post] Ikke konfigurert – hopper over for ${userName}`);
-    return;
-  }
+  if (!t) { console.log(`[E-post] Ikke konfigurert – hopper over for ${userName}`); return; }
 
-  const groupMatches = db.query<any, []>(
-    "SELECT * FROM matches WHERE stage='group' ORDER BY group_name,matchday,id"
-  ).all();
+  const groupMatches = (await pool.query("SELECT * FROM matches WHERE stage='group' ORDER BY group_name,matchday,id")).rows;
+  const preds = (await pool.query("SELECT match_id,result FROM predictions WHERE user_id=$1", [userId])).rows;
   const predMap: Record<number, string> = {};
-  const preds = db.query<any, number>("SELECT match_id,result FROM predictions WHERE user_id=?").all(userId);
   for (const p of preds) predMap[p.match_id] = p.result;
 
-  const standings = db.query<any, number>(
-    "SELECT group_name,position,team FROM standings_predictions WHERE user_id=? ORDER BY group_name,position"
-  ).all(userId);
+  const standings = (await pool.query("SELECT group_name,position,team FROM standings_predictions WHERE user_id=$1 ORDER BY group_name,position", [userId])).rows;
   const standMap: Record<string, Record<number, string>> = {};
   for (const s of standings) {
     if (!standMap[s.group_name]) standMap[s.group_name] = {};
     standMap[s.group_name][s.position] = s.team;
   }
 
-  const specials = db.query<any, number>("SELECT category,value FROM special_predictions WHERE user_id=?").all(userId);
+  const specials = (await pool.query("SELECT category,value FROM special_predictions WHERE user_id=$1", [userId])).rows;
   const specMap: Record<string, string> = {};
   for (const s of specials) specMap[s.category] = s.value;
 

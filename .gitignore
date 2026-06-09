@@ -3,3 +3,5 @@
 *.sqlite-shm
 *.sqlite-wal
 .env
+dist/
+.vercel/

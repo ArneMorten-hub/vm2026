@@ -1,4 +1,4 @@
-import { Database } from "bun:sqlite";
+import { Pool } from "pg";
 
 export type User = {
   id: number;
@@ -14,28 +14,27 @@ export function generateToken(): string {
   return Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-export function getUserByToken(db: Database, token: string): User | null {
-  return db.query<User, string>(
+export async function getUserByToken(pool: Pool, token: string): Promise<User | null> {
+  const r = await pool.query<User>(
     `SELECT u.id, u.name, u.email, u.is_admin, u.submitted_at
      FROM users u JOIN sessions s ON u.id = s.user_id
-     WHERE s.token = ? AND s.expires_at > datetime('now')`
-  ).get(token) ?? null;
+     WHERE s.token = $1 AND s.expires_at > NOW()`,
+    [token]
+  );
+  return r.rows[0] ?? null;
 }
 
-const jsonRes = (data: unknown, status: number) =>
-  new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
-
-export function requireAuth(db: Database, req: Request): User | Response {
-  const auth = req.headers.get("Authorization") || req.headers.get("authorization");
-  if (!auth?.startsWith("Bearer ")) return jsonRes({ error: "Ikke innlogget" }, 401);
-  const user = getUserByToken(db, auth.slice(7));
-  if (!user) return jsonRes({ error: "Ugyldig eller utløpt økt" }, 401);
+export async function requireAuth(pool: Pool, headers: Record<string, string | string[] | undefined>): Promise<User | { error: string; status: number }> {
+  const auth = (headers["authorization"] as string) || "";
+  if (!auth.startsWith("Bearer ")) return { error: "Ikke innlogget", status: 401 };
+  const user = await getUserByToken(pool, auth.slice(7));
+  if (!user) return { error: "Ugyldig eller utløpt økt", status: 401 };
   return user;
 }
 
-export function requireAdmin(db: Database, req: Request): User | Response {
-  const u = requireAuth(db, req);
-  if (u instanceof Response) return u;
-  if (!u.is_admin) return jsonRes({ error: "Ingen tilgang" }, 403);
+export async function requireAdmin(pool: Pool, headers: Record<string, string | string[] | undefined>): Promise<User | { error: string; status: number }> {
+  const u = await requireAuth(pool, headers);
+  if ("error" in u) return u;
+  if (!u.is_admin) return { error: "Ingen tilgang", status: 403 };
   return u;
 }
