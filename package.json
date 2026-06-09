@@ -1,0 +1,16 @@
+{
+  "name": "vm2026",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "bun run src/server.ts",
+    "dev": "bun --watch src/server.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/nodemailer": "^8.0.0"
+  },
+  "dependencies": {
+    "nodemailer": "^8.0.10",
+    "xlsx": "^0.18.5"
+  }
+}

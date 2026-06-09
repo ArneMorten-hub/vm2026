@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>VM-konkurranse 2026</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f4ff;
+  --white:#ffffff;
+  --card:#ffffff;
+  --blue:#2563eb;--blue2:#1d4ed8;--blue3:#1e40af;
+  --blue-light:#eff6ff;--blue-mid:#bfdbfe;--blue-dark:#1e3a8a;
+  --green:#059669;--green-light:#d1fae5;--green-dark:#065f46;
+  --amber:#d97706;--amber-light:#fef3c7;
+  --red:#dc2626;--red-light:#fee2e2;
+  --text:#111827;--text2:#374151;--muted:#6b7280;--dim:#9ca3af;
+  --border:#e5e7eb;--border2:#d1d5db;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.05);
+  --shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
+  --shadow-md:0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.06);
+  --shadow-lg:0 10px 15px rgba(0,0,0,.1),0 4px 6px rgba(0,0,0,.05);
+  --r:10px;--r2:14px;--r3:20px;--r4:28px;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',sans-serif;min-height:100vh;font-size:15px;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none;outline:none}
+input,select,textarea{font-family:inherit;outline:none}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── Landing / Auth ── */
+.landing{min-height:100vh;background:linear-gradient(160deg,#eff6ff 0%,#e0ecff 50%,#dbeafe 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;position:relative;overflow:hidden}
+.landing::before{content:'';position:absolute;top:-100px;right:-100px;width:400px;height:400px;background:radial-gradient(circle,rgba(37,99,235,.12),transparent 70%);pointer-events:none}
+.landing::after{content:'';position:absolute;bottom:-80px;left:-80px;width:300px;height:300px;background:radial-gradient(circle,rgba(16,185,129,.1),transparent 70%);pointer-events:none}
+.landing-card{width:100%;max-width:440px;background:var(--white);border-radius:var(--r4);padding:44px 40px;box-shadow:var(--shadow-lg),0 0 0 1px rgba(37,99,235,.08);position:relative;z-index:1;animation:fadeUp .4s ease}
+.landing-top{text-align:center;margin-bottom:32px}
+.landing-ball{font-size:52px;margin-bottom:12px;filter:drop-shadow(0 4px 12px rgba(37,99,235,.2))}
+.landing-title{font-size:26px;font-weight:800;color:var(--text);letter-spacing:-.5px;line-height:1.2;margin-bottom:6px}
+.landing-sub{color:var(--muted);font-size:14px;line-height:1.5}
+.landing-sub strong{color:var(--blue)}
+.inp-label{display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.inp{width:100%;padding:13px 16px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--text);font-size:15px;transition:border-color .2s,box-shadow .2s}
+.inp:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);background:var(--white)}
+.inp-field{margin-bottom:16px}
+.btn-primary{width:100%;padding:14px;background:var(--blue);color:#fff;border-radius:var(--r2);font-size:15px;font-weight:700;transition:all .2s;box-shadow:0 4px 14px rgba(37,99,235,.3);margin-top:4px}
+.btn-primary:hover{background:var(--blue2);transform:translateY(-1px);box-shadow:0 6px 20px rgba(37,99,235,.4)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.err-msg{color:var(--red);font-size:13px;background:var(--red-light);border:1px solid rgba(220,38,38,.2);border-radius:var(--r);padding:10px 14px;margin-top:10px;text-align:center}
+.landing-note{text-align:center;font-size:12px;color:var(--dim);margin-top:16px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+/* ── App shell ── */
+.shell{display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:62px;background:var(--white);border-bottom:1.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-sm)}
+.topbar-l{display:flex;align-items:center;gap:12px}
+.topbar-ball{font-size:26px}
+.topbar-brand{font-size:17px;font-weight:800;color:var(--blue);letter-spacing:-.3px}
+.topbar-year{font-size:11px;color:var(--dim);margin-top:1px}
+.topbar-r{display:flex;align-items:center;gap:10px}
+.topbar-user{font-size:13px;color:var(--muted);font-weight:600}
+.btn-ghost{background:var(--white);border:1.5px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:var(--r);font-size:13px;font-weight:600;transition:all .15s}
+.btn-ghost:hover{border-color:var(--red);color:var(--red)}
+nav{background:var(--white);border-bottom:1.5px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+.nb{padding:0 22px;height:46px;background:transparent;color:var(--muted);font-size:14px;font-weight:600;border-bottom:2.5px solid transparent;white-space:nowrap;transition:all .15s;display:inline-flex;align-items:center}
+.nb:hover{color:var(--text2)}
+.nb.on{color:var(--blue);border-bottom-color:var(--blue)}
+.page{max-width:980px;margin:0 auto;padding:28px 20px 80px;width:100%}
+
+/* ── Dashboard ── */
+.dash-hero{text-align:center;padding:36px 20px 28px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:white;margin:-28px -20px 28px;border-radius:0 0 var(--r4) var(--r4)}
+.dash-ball{font-size:40px;margin-bottom:8px}
+.dash-title{font-size:28px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px}
+.dash-greeting{font-size:16px;opacity:.9}
+.deadline-banner{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r3);padding:20px 24px;margin-bottom:24px;text-align:center;box-shadow:var(--shadow)}
+.deadline-text{font-size:14px;color:var(--muted);margin-bottom:12px}
+.deadline-text strong{color:var(--text)}
+.countdown{display:flex;align-items:center;justify-content:center;gap:8px}
+.cd-unit{display:flex;flex-direction:column;align-items:center;background:var(--blue-light);border:1.5px solid var(--blue-mid);border-radius:var(--r2);padding:10px 16px;min-width:64px}
+.cd-num{font-size:26px;font-weight:800;color:var(--blue);line-height:1}
+.cd-label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.cd-sep{font-size:22px;font-weight:800;color:var(--blue-mid);margin-bottom:12px}
+.deadline-passed{font-size:16px;font-weight:700;color:var(--red);background:var(--red-light);padding:10px 20px;border-radius:var(--r2);display:inline-block}
+.dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+@media(max-width:680px){.dash-grid{grid-template-columns:1fr}}
+.dash-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r3);padding:24px;box-shadow:var(--shadow);overflow:hidden;position:relative}
+.dash-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--blue);border-radius:var(--r3) var(--r3) 0 0}
+.dash-card-icon{font-size:28px;margin-bottom:10px}
+.dash-card-title{font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px}
+.dash-card-sub{font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5}
+.dash-stat{font-size:13px;color:var(--text2);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.dash-stat-bar{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.dash-stat-fill{height:5px;background:var(--blue);border-radius:3px;transition:width .6s}
+.dash-stat-fill.green{background:var(--green)}
+.dash-stat-num{font-size:11px;font-weight:700;color:var(--muted);min-width:36px;text-align:right}
+.btn-dash{width:100%;padding:11px;background:var(--blue);color:white;border-radius:var(--r2);font-size:14px;font-weight:700;margin-top:14px;transition:all .15s;box-shadow:0 2px 8px rgba(37,99,235,.25)}
+.btn-dash:hover{background:var(--blue2);transform:translateY(-1px)}
+.btn-dash.green{background:var(--green);box-shadow:0 2px 8px rgba(5,150,105,.25)}
+.btn-dash.green:hover{background:var(--green-dark)}
+.btn-dash.outline{background:transparent;border:1.5px solid var(--blue);color:var(--blue)}
+.btn-dash.outline:hover{background:var(--blue-light)}
+.lb-mini-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.lb-mini-row:last-child{border-bottom:none}
+.lb-mini-rank{font-size:15px;min-width:24px}
+.lb-mini-name{flex:1;font-size:13px;font-weight:600}
+.lb-mini-pts{font-size:13px;font-weight:700;color:var(--blue)}
+.submitted-badge{display:inline-flex;align-items:center;gap:6px;background:var(--green-light);color:var(--green-dark);font-size:13px;font-weight:700;padding:8px 16px;border-radius:var(--r2);border:1px solid rgba(5,150,105,.2);margin-top:10px}
+
+/* ── Group cards grid ── */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-title{font-size:18px;font-weight:800;color:var(--text)}
+.section-chip{background:var(--blue-light);color:var(--blue);font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px}
+.groups-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.group-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r3);padding:16px 18px;cursor:pointer;transition:all .2s;position:relative}
+.group-card:hover{border-color:var(--blue-mid);transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.group-card.complete{border-color:rgba(5,150,105,.4);box-shadow:0 0 0 1px rgba(5,150,105,.15),var(--shadow)}
+.group-card.partial{border-color:var(--blue-mid)}
+.gc-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.gc-letter{width:44px;height:44px;background:var(--blue-light);border:1.5px solid var(--blue-mid);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:var(--blue)}
+.gc-info{flex:1}
+.gc-title{font-size:14px;font-weight:800;color:var(--text)}
+.gc-sub{font-size:12px;color:var(--muted);margin-top:1px}
+.gc-status{font-size:12px;font-weight:700;color:var(--muted)}
+.gc-status.done{color:var(--green)}
+.gc-status.partial{color:var(--blue)}
+.gc-teams{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.gc-team{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);padding:3px 8px;background:var(--bg);border-radius:7px}
+.gc-done-mark{position:absolute;top:14px;right:14px;width:24px;height:24px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px}
+.gc-arrow{position:absolute;right:16px;bottom:16px;color:var(--dim);font-size:16px;transition:all .2s}
+.group-card:hover .gc-arrow{color:var(--blue);right:12px}
+
+/* ── Group detail ── */
+.gd-back{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;font-weight:700;background:var(--white);padding:8px 14px;border-radius:var(--r);border:1.5px solid var(--border);transition:all .15s;margin-bottom:18px}
+.gd-back:hover{color:var(--blue);border-color:var(--blue-mid)}
+.gd-hero{background:linear-gradient(135deg,var(--blue),var(--blue2));color:white;border-radius:var(--r3);padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden}
+.gd-hero::after{content:'';position:absolute;right:-20px;top:-20px;width:120px;height:120px;background:rgba(255,255,255,.08);border-radius:50%}
+.gd-hero-top{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.gd-letter{font-size:44px;font-weight:900;line-height:1;opacity:.95}
+.gd-hero-text h2{font-size:20px;font-weight:800}
+.gd-hero-text p{font-size:13px;opacity:.8;margin-top:3px}
+.gd-team-badges{display:flex;flex-wrap:wrap;gap:8px}
+.gd-badge{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border-radius:8px;padding:5px 10px;font-size:13px;font-weight:600;backdrop-filter:blur(4px)}
+.gd-progress{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r2);padding:14px 18px;margin-bottom:18px;box-shadow:var(--shadow-sm)}
+.gd-prog-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.gd-prog-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.gd-prog-label{font-size:12px;color:var(--muted);min-width:120px}
+.gd-prog-track{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.gd-prog-fill{height:5px;border-radius:3px;transition:width .5s}
+.gd-prog-fill.blue{background:var(--blue)}
+.gd-prog-fill.green{background:var(--green)}
+.gd-prog-count{font-size:11px;font-weight:700;min-width:32px;text-align:right;color:var(--muted)}
+.gd-prog-count.done{color:var(--green)}
+.complete-banner{background:linear-gradient(135deg,var(--green-light),#ecfdf5);border:1.5px solid rgba(5,150,105,.3);border-radius:var(--r2);padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;gap:14px;animation:popIn .4s ease}
+@keyframes popIn{0%{transform:scale(.96);opacity:0}60%{transform:scale(1.01)}100%{opacity:1;transform:none}}
+.cb-icon{font-size:30px}
+.cb-text h3{font-size:15px;font-weight:800;color:var(--green-dark)}
+.cb-text p{font-size:12px;color:var(--muted);margin-top:2px}
+.section-label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.section-badge{background:var(--blue-light);color:var(--blue);border-radius:20px;padding:2px 10px;font-size:11px;text-transform:none;letter-spacing:0;font-weight:600}
+
+/* ── Standings ── */
+.standings-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r3);padding:18px;margin-bottom:20px;box-shadow:var(--shadow-sm)}
+.standings-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.standing-row{display:flex;align-items:center;gap:10px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding:10px 14px;transition:all .15s}
+.standing-row.filled{border-color:var(--blue-mid);background:var(--blue-light)}
+.standing-pos{font-size:18px;font-weight:900;color:var(--blue);min-width:26px}
+.standing-sel{flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none}
+.standing-sel option{background:var(--white);color:var(--text)}
+.standing-check{font-size:14px;color:var(--green);opacity:0;transition:opacity .2s}
+.standing-check.show{opacity:1}
+
+/* ── Match card with H/U/B ── */
+.matches-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r3);padding:16px;margin-bottom:20px;box-shadow:var(--shadow-sm)}
+.md-header{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;padding:6px 0 10px;margin-top:4px}
+.md-header:first-child{margin-top:0}
+.match{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r2);padding:12px 14px;margin-bottom:8px;transition:all .15s}
+.match:last-child{margin-bottom:0}
+.match.tipped{border-color:var(--blue-mid);background:var(--blue-light)}
+.match.done{border-color:rgba(5,150,105,.3);background:var(--green-light)}
+.match.locked{opacity:.7}
+.match-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.match-round{font-size:11px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.match-time{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.time-chip{background:var(--blue-light);color:var(--blue);border-radius:6px;padding:2px 7px;font-weight:800;font-size:11px}
+.match-teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:10px}
+.team{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px}
+.team.home{justify-content:flex-end}
+.team.away{justify-content:flex-start}
+.team-flag{font-size:20px}
+.match-vs{font-size:12px;font-weight:800;color:var(--dim);text-align:center}
+.hub-row{display:flex;gap:6px;justify-content:center}
+.hub-btn{flex:1;max-width:64px;padding:8px 0;border-radius:var(--r);border:1.5px solid var(--border);background:var(--white);color:var(--muted);font-size:13px;font-weight:700;transition:all .15s}
+.hub-btn:hover:not(:disabled){border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
+.hub-btn.active{background:var(--blue);color:white;border-color:var(--blue);box-shadow:0 2px 8px rgba(37,99,235,.3)}
+.hub-btn:disabled{cursor:not-allowed}
+.match-result{display:flex;justify-content:center;margin-top:8px}
+.rb{font-size:12px;font-weight:700;padding:3px 12px;border-radius:20px;display:inline-flex;align-items:center;gap:5px}
+.rb.correct{background:var(--green-light);color:var(--green-dark);border:1px solid rgba(5,150,105,.25)}
+.rb.wrong{background:var(--bg);color:var(--dim);border:1px solid var(--border)}
+.rb.pending{color:var(--muted);font-size:11px}
+.actual-res{font-size:22px;font-weight:900;color:var(--text);text-align:center;padding:4px 0}
+.actual-label{font-size:11px;color:var(--muted);text-align:center;margin-bottom:4px}
+
+/* ── Footer nav in group detail ── */
+.gd-footer{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.95);border-top:1.5px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;z-index:50;backdrop-filter:blur(8px)}
+.gd-footer .center{font-size:12px;font-weight:700;color:var(--muted)}
+.btn-nav{display:flex;align-items:center;gap:5px;padding:9px 16px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--text2);font-size:13px;font-weight:700;transition:all .15s}
+.btn-nav:hover:not(:disabled){border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
+.btn-nav:disabled{opacity:.3;cursor:not-allowed}
+
+/* ── Knockout locked ── */
+.ko-locked{background:var(--white);border:2px dashed var(--border2);border-radius:var(--r3);padding:40px 24px;text-align:center;margin-top:20px}
+.ko-locked-icon{font-size:40px;margin-bottom:12px}
+.ko-locked-title{font-size:18px;font-weight:800;color:var(--text);margin-bottom:6px}
+.ko-locked-sub{font-size:14px;color:var(--muted);line-height:1.6}
+.ko-locked-date{display:inline-block;background:var(--blue-light);color:var(--blue);font-weight:700;font-size:14px;padding:6px 18px;border-radius:20px;margin-top:12px}
+
+/* ── Special ── */
+.special-hero{background:linear-gradient(135deg,var(--blue),var(--blue2));color:white;border-radius:var(--r3);padding:24px;margin-bottom:24px;text-align:center}
+.special-hero h2{font-size:20px;font-weight:800;margin-bottom:4px}
+.special-hero p{font-size:13px;opacity:.85}
+.special-progress{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+.sp-chip{background:rgba(255,255,255,.2);border-radius:20px;padding:4px 14px;font-size:12px;font-weight:700}
+.special-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.sc{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r3);padding:18px 20px;transition:all .2s;box-shadow:var(--shadow-sm)}
+.sc:hover{border-color:var(--blue-mid);box-shadow:var(--shadow)}
+.sc.answered{border-color:rgba(5,150,105,.4)}
+.sc-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
+.sc-label{font-size:14px;font-weight:800;color:var(--text)}
+.sc-pts{font-size:11px;background:var(--amber-light);color:var(--amber);border-radius:20px;padding:2px 9px;font-weight:700;white-space:nowrap}
+.sc-desc{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5}
+.sc-input-row{display:flex;gap:8px}
+.sc-input-row .inp{flex:1;padding:10px 13px;font-size:14px}
+.btn-save{padding:10px 16px;background:var(--blue);color:white;border-radius:var(--r);font-size:13px;font-weight:700;transition:all .15s;white-space:nowrap}
+.btn-save:hover{background:var(--blue2)}
+.sc-saved{font-size:12px;color:var(--green);font-weight:700;margin-top:8px;display:flex;align-items:center;gap:4px}
+.sc-cur{font-size:12px;color:var(--dim);margin-top:6px}
+
+/* ── Leaderboard ── */
+.lb-wrap{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r3);overflow:hidden;box-shadow:var(--shadow-sm)}
+.lb-hdr{display:grid;grid-template-columns:52px 1fr 100px 180px;padding:10px 18px;background:var(--blue-light);font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--blue-mid)}
+.lb-row{display:grid;grid-template-columns:52px 1fr 100px 180px;padding:14px 18px;border-bottom:1px solid var(--border);align-items:center;transition:background .12s}
+.lb-row:last-child{border-bottom:none}
+.lb-row:hover{background:var(--bg)}
+.lb-row.me{background:var(--blue-light)}
+.lb-rank{font-size:18px;text-align:center}
+.lb-name .name{font-size:15px;font-weight:800}
+.lb-name .you{font-size:10px;background:var(--blue);color:white;font-weight:800;padding:2px 8px;border-radius:20px;margin-left:8px}
+.lb-name .sub{font-size:11px;color:var(--muted);margin-top:2px}
+.lb-name .sub-submitted{font-size:10px;color:var(--green);font-weight:700;margin-top:1px}
+.lb-pts .pts{font-size:24px;font-weight:900;color:var(--blue)}
+.lb-pts .bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:5px;width:80px}
+.lb-pts .bar-fill{height:4px;background:var(--blue);border-radius:2px;transition:width .6s}
+.lb-pts .sub{font-size:11px;color:var(--dim);margin-top:2px}
+.lb-stats{display:flex;gap:5px;flex-wrap:wrap}
+.st{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--muted)}
+.lb-legend{margin-top:14px;display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--dim)}
+
+/* ── Progress bar (overview) ── */
+.prog-banner{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r2);padding:14px 18px;margin-bottom:18px;box-shadow:var(--shadow-sm)}
+.prog-bar-track{height:6px;background:var(--border);border-radius:3px;margin-bottom:10px;overflow:hidden}
+.prog-bar-fill{height:6px;background:var(--blue);border-radius:3px;transition:width .6s}
+.prog-chips{display:flex;gap:8px;flex-wrap:wrap}
+.prog-chip{background:var(--bg);border:1.5px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--muted)}
+.prog-chip strong{color:var(--text);font-weight:700}
+.prog-chip.done{border-color:rgba(5,150,105,.4);color:var(--green)}
+
+/* ── Admin ── */
+.admin-tabs{display:flex;gap:0;background:var(--white);border:1.5px solid var(--border);border-radius:var(--r2);overflow:hidden;margin-bottom:20px;width:fit-content;box-shadow:var(--shadow-sm)}
+.atab{padding:10px 20px;background:transparent;color:var(--muted);font-size:13px;font-weight:700;transition:all .15s;border-right:1px solid var(--border)}
+.atab:last-child{border-right:none}
+.atab.on{background:var(--blue);color:white}
+.admin-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r3);padding:20px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
+.admin-card-h{font-size:15px;font-weight:800;color:var(--blue);margin-bottom:16px}
+.adm-match{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;transition:border-color .15s}
+.adm-match:hover{border-color:var(--border2)}
+.adm-name{flex:1;font-size:13px;font-weight:700;min-width:160px}
+.adm-date{font-size:11px;color:var(--muted);min-width:70px}
+.adm-si{width:52px;height:36px;text-align:center;font-size:16px;font-weight:800;background:var(--white);border:1.5px solid var(--border);border-radius:8px;color:var(--text);padding:0}
+.adm-si:focus{border-color:var(--blue)}
+.adm-time{width:72px;font-size:12px;text-align:center}
+.btn-adm{padding:7px 14px;background:var(--blue);color:white;border-radius:8px;font-size:12px;font-weight:700;transition:all .15s}
+.btn-adm:hover{background:var(--blue2)}
+.adm-done{font-size:11px;color:var(--green);font-weight:700;background:var(--green-light);padding:3px 10px;border-radius:20px}
+.filter-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.filter-lbl{font-size:13px;color:var(--muted);white-space:nowrap}
+.filter-row select{flex:1;min-width:120px}
+.users-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.user-card{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r2);padding:16px;cursor:pointer;transition:all .2s;text-align:center}
+.user-card:hover{border-color:var(--blue-mid);background:var(--blue-light);transform:translateY(-2px)}
+.user-card-icon{font-size:28px;margin-bottom:8px}
+.user-card-name{font-size:14px;font-weight:800}
+.user-card-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.user-card.submitted{border-color:rgba(5,150,105,.4)}
+.export-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;background:var(--green);color:white;border-radius:var(--r2);font-size:14px;font-weight:700;text-decoration:none;box-shadow:0 2px 8px rgba(5,150,105,.25);transition:all .15s}
+.export-btn:hover{background:var(--green-dark);transform:translateY(-1px)}
+
+/* ── Modal ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;backdrop-filter:blur(4px)}
+.modal{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r3);width:100%;max-width:800px;padding:28px;margin:auto;animation:fadeUp .2s ease;box-shadow:var(--shadow-lg)}
+.modal-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.modal-title{font-size:18px;font-weight:800}
+.btn-close{background:var(--bg);border:1.5px solid var(--border);color:var(--muted);border-radius:var(--r);padding:6px 14px;font-size:13px;font-weight:700}
+.btn-close:hover{color:var(--red);border-color:var(--red)}
+.modal-tabs{display:flex;gap:3px;margin-bottom:16px;background:var(--bg);border-radius:var(--r);padding:3px;width:fit-content}
+.mtab{padding:7px 16px;border-radius:8px;background:transparent;color:var(--muted);font-size:13px;font-weight:700;transition:all .15s}
+.mtab.on{background:var(--white);color:var(--blue);box-shadow:var(--shadow-sm)}
+.pred-table{width:100%;border-collapse:collapse;font-size:13px}
+.pred-table th{padding:9px 12px;background:var(--bg);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;text-align:left;border-bottom:1px solid var(--border)}
+.pred-table td{padding:9px 12px;border-bottom:1px solid var(--border)}
+.pred-table tr:last-child td{border-bottom:none}
+.pred-table tr:hover td{background:var(--bg)}
+.empty{text-align:center;padding:32px;color:var(--dim);font-size:14px}
+
+/* ── Submit modal ── */
+.submit-modal{max-width:480px}
+.submit-modal h2{font-size:20px;font-weight:800;color:var(--text);margin-bottom:8px}
+.submit-modal p{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:16px}
+.submit-summary{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r2);padding:14px;margin-bottom:20px}
+.submit-summary-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:1px solid var(--border)}
+.submit-summary-row:last-child{border-bottom:none}
+.submit-summary-row .label{color:var(--muted)}
+.submit-summary-row .val{font-weight:700;color:var(--text)}
+.submit-actions{display:flex;gap:10px}
+.btn-confirm{flex:1;padding:13px;background:var(--green);color:white;border-radius:var(--r2);font-size:15px;font-weight:700;box-shadow:0 4px 14px rgba(5,150,105,.3);transition:all .15s}
+.btn-confirm:hover{background:var(--green-dark)}
+.btn-cancel{flex:0;padding:13px 20px;background:var(--white);border:1.5px solid var(--border);color:var(--muted);border-radius:var(--r2);font-size:14px;font-weight:700}
+.btn-cancel:hover{border-color:var(--border2)}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:80px;right:20px;padding:12px 20px;border-radius:var(--r2);font-size:14px;font-weight:700;z-index:400;animation:slideUp .3s ease;box-shadow:var(--shadow-lg);max-width:320px}
+.toast.ok{background:#ecfdf5;border:1.5px solid rgba(5,150,105,.4);color:var(--green-dark)}
+.toast.bad{background:var(--red-light);border:1.5px solid rgba(220,38,38,.3);color:var(--red)}
+.toast.info{background:var(--blue-light);border:1.5px solid var(--blue-mid);color:var(--blue3)}
+@keyframes slideUp{from{transform:translateY(10px);opacity:0}to{opacity:1}}
+.spin{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:rot .7s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+.loader{display:flex;justify-content:center;align-items:center;padding:60px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(max-width:640px){
+  .lb-hdr,.lb-row{grid-template-columns:44px 1fr 80px}
+  .lb-row>:last-child,.lb-hdr>:last-child{display:none}
+  .standings-grid{grid-template-columns:1fr}
+  .gd-footer .center{display:none}
+  .modal{padding:18px}
+  .landing-card{padding:32px 22px}
+  .dash-hero{margin:-28px -20px 20px}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useMemo, useRef } = React;
+const GROUPS = "ABCDEFGHIJKL".split("");
+const STAGE_NO = {group:"Gruppe",r32:"Runde av 32",r16:"Åttedelsfinale",qf:"Kvartfinale",sf:"Semifinale","3rd":"Bronsefinale",final:"Finale"};
+const DEADLINE = new Date("2026-06-11T19:00:00.000Z"); // 21:00 CEST
+
+async function api(path, opts={}) {
+  const token = localStorage.getItem("token");
+  const res = await fetch(path, {
+    ...opts,
+    headers: {"Content-Type":"application/json",...(token?{Authorization:"Bearer "+token}:{}),...(opts.headers||{})},
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Feil");
+  return data;
+}
+
+function useToast() {
+  const [t,setT] = useState(null);
+  const timer = useRef(null);
+  const show = useCallback((msg,type="ok")=>{
+    clearTimeout(timer.current);setT({msg,type});
+    timer.current=setTimeout(()=>setT(null),3200);
+  },[]);
+  return [t,show];
+}
+
+const fmt = d => {
+  if(!d) return "";
+  return new Date(d+(d.length===10?"T12:00:00":"")).toLocaleDateString("no-NO",{day:"numeric",month:"short"});
+};
+const rankIcon = i => ["🥇","🥈","🥉"][i] ?? `${i+1}.`;
+const isPastDeadline = () => new Date() > DEADLINE;
+
+// ── Countdown ──
+function Countdown() {
+  const [rem,setRem] = useState(null);
+  useEffect(()=>{
+    function tick(){
+      const diff = DEADLINE - new Date();
+      if(diff<=0){setRem(null);return;}
+      setRem({
+        days: Math.floor(diff/86400000),
+        hours: Math.floor((diff%86400000)/3600000),
+        mins: Math.floor((diff%3600000)/60000),
+        secs: Math.floor((diff%60000)/1000),
+      });
+    }
+    tick();
+    const id = setInterval(tick,1000);
+    return ()=>clearInterval(id);
+  },[]);
+  if(!rem) return <div className="deadline-passed">⏰ Fristen er ute – tipping er stengt</div>;
+  const p = n => String(n).padStart(2,"0");
+  return(
+    <div className="countdown">
+      <div className="cd-unit"><span className="cd-num">{rem.days}</span><span className="cd-label">dager</span></div>
+      <span className="cd-sep">:</span>
+      <div className="cd-unit"><span className="cd-num">{p(rem.hours)}</span><span className="cd-label">timer</span></div>
+      <span className="cd-sep">:</span>
+      <div className="cd-unit"><span className="cd-num">{p(rem.mins)}</span><span className="cd-label">min</span></div>
+      <span className="cd-sep">:</span>
+      <div className="cd-unit"><span className="cd-num">{p(rem.secs)}</span><span className="cd-label">sek</span></div>
+    </div>
+  );
+}
+
+// ── Landing ──
+function LandingPage({onLogin}) {
+  const [name,setName]=useState("");const [email,setEmail]=useState("");
+  const [err,setErr]=useState("");const [loading,setLoading]=useState(false);
+  async function submit(e){
+    e.preventDefault();setErr("");setLoading(true);
+    try{
+      const d = await api("/api/auth/login-or-register",{method:"POST",body:JSON.stringify({name:name.trim(),email:email.trim()})});
+      localStorage.setItem("token",d.token);onLogin(d.user);
+    }catch(ex){setErr(ex.message);}finally{setLoading(false);}
+  }
+  return(
+    <div className="landing">
+      <div className="landing-card">
+        <div className="landing-top">
+          <div className="landing-ball">⚽</div>
+          <h1 className="landing-title">VM-konkurranse 2026</h1>
+          <p className="landing-sub">USA · Canada · Mexico<br/><strong>11. juni – 19. juli 2026</strong></p>
+        </div>
+        <form onSubmit={submit}>
+          <div className="inp-field"><label className="inp-label">Navn</label>
+            <input className="inp" type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="Ditt fulle navn" autoFocus/>
+          </div>
+          <div className="inp-field"><label className="inp-label">E-postadresse</label>
+            <input className="inp" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="din@epost.no"/>
+          </div>
+          {err&&<div className="err-msg">{err}</div>}
+          <button className="btn-primary" disabled={loading||!name.trim()||!email.trim()}>
+            {loading?"Laster...":"Bli med →"}
+          </button>
+        </form>
+        <p className="landing-note">Allerede registrert? Skriv inn samme e-post for å logge inn</p>
+      </div>
+    </div>
+  );
+}
+
+// ── Submit Modal ──
+function SubmitModal({onClose,onConfirm,predictions,standings,mySpecial,loading}) {
+  const groupMatches = 72;
+  const tipped = Object.keys(predictions).length;
+  const standingsCount = Object.values(standings).reduce((s,g)=>s+Object.values(g).filter(Boolean).length,0);
+  const specialCount = Object.keys(mySpecial).length;
+  return(
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal submit-modal" style={{marginTop:40}}>
+        <div style={{textAlign:"center",marginBottom:20}}>
+          <div style={{fontSize:40,marginBottom:8}}>📬</div>
+          <h2>Send inn tipping?</h2>
+          <p>Når du sender inn låses tippingen din og kan ikke endres. Du vil motta en e-postbekreftelse.</p>
+        </div>
+        <div className="submit-summary">
+          <div className="submit-summary-row"><span className="label">Kamptips (gruppespill)</span><span className="val" style={{color:tipped<groupMatches?"var(--amber)":"var(--green)"}}>{tipped}/{groupMatches}</span></div>
+          <div className="submit-summary-row"><span className="label">Tabellplasseringer</span><span className="val" style={{color:standingsCount<48?"var(--amber)":"var(--green)"}}>{standingsCount}/48</span></div>
+          <div className="submit-summary-row"><span className="label">Spesialtips</span><span className="val" style={{color:specialCount<14?"var(--amber)":"var(--green)"}}>{specialCount}/14</span></div>
+        </div>
+        {(tipped<groupMatches||standingsCount<48||specialCount<14)&&(
+          <div style={{background:"var(--amber-light)",border:"1.5px solid rgba(217,119,6,.3)",borderRadius:"var(--r)",padding:"10px 14px",fontSize:13,color:"var(--amber)",marginBottom:16}}>
+            ⚠️ Du har ikke fylt inn alt ennå. Du kan likevel sende inn det du har.
+          </div>
+        )}
+        <div className="submit-actions">
+          <button className="btn-cancel" onClick={onClose} disabled={loading}>Avbryt</button>
+          <button className="btn-confirm" onClick={onConfirm} disabled={loading}>{loading?"Sender...":"✓ Send inn og lås"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Dashboard ──
+function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,onNav,onSubmit}) {
+  const groupMatches = matches.filter(m=>m.stage==="group");
+  const tipped = Object.keys(predictions).length;
+  const totalStand = 48; // 12×4
+  const tippedStand = Object.values(standings).reduce((s,g)=>s+Object.values(g).filter(Boolean).length,0);
+  const tippedSpec = Object.keys(mySpecial).length;
+  const total = 72+48+14;
+  const done = tipped+tippedStand+tippedSpec;
+  const pct = Math.round((done/total)*100);
+  const isSubmitted = !!user.submittedAt;
+  const past = isPastDeadline();
+  return(
+    <div className="page" style={{paddingTop:0}}>
+      <div className="dash-hero">
+        <div className="dash-ball">⚽</div>
+        <h1 className="dash-title">VM-konkurranse 2026</h1>
+        <p className="dash-greeting">Hei, {user.name}! 👋</p>
+      </div>
+      {!isSubmitted&&(
+        <div className="deadline-banner">
+          <p className="deadline-text">
+            ⏰ Fristen for å legge inn tips for gruppespill, tabellplasseringer og spesialtips er <strong>11. juni kl. 21:00</strong>
+          </p>
+          <Countdown/>
+        </div>
+      )}
+      {isSubmitted&&(
+        <div style={{background:"var(--green-light)",border:"1.5px solid rgba(5,150,105,.3)",borderRadius:"var(--r3)",padding:"20px 24px",marginBottom:24,textAlign:"center"}}>
+          <div style={{fontSize:28,marginBottom:8}}>✅</div>
+          <div style={{fontSize:16,fontWeight:800,color:"var(--green-dark)"}}>Tipping sendt inn og låst!</div>
+          <div style={{fontSize:13,color:"var(--muted)",marginTop:4}}>Du kan se tippingen din, men ikke endre den lenger.</div>
+        </div>
+      )}
+      <div className="dash-grid">
+        {/* Box 1: Gruppespill */}
+        <div className="dash-card">
+          <div className="dash-card-icon">🏟️</div>
+          <div className="dash-card-title">Bli med i konkurransen</div>
+          <div className="dash-card-sub">Tipp resultat i gruppespill</div>
+          <div className="dash-stat" style={{marginBottom:4}}>
+            <span style={{minWidth:110,fontSize:12,color:"var(--muted)"}}>Kamptips</span>
+            <div className="dash-stat-bar"><div className="dash-stat-fill" style={{width:`${(tipped/72)*100}%`}}/></div>
+            <span className="dash-stat-num" style={{color:tipped===72?"var(--green)":"var(--muted)"}}>{tipped}/72</span>
+          </div>
+          <div className="dash-stat">
+            <span style={{minWidth:110,fontSize:12,color:"var(--muted)"}}>Tabellsvar</span>
+            <div className="dash-stat-bar"><div className="dash-stat-fill green" style={{width:`${(tippedStand/totalStand)*100}%`}}/></div>
+            <span className="dash-stat-num" style={{color:tippedStand===48?"var(--green)":"var(--muted)"}}>{tippedStand}/48</span>
+          </div>
+          <button className="btn-dash" onClick={()=>onNav("groups")}>{isSubmitted?"Se gruppetips →":"Start tipping →"}</button>
+        </div>
+        {/* Box 2: Spesialtips */}
+        <div className="dash-card">
+          <div className="dash-card-icon">🌟</div>
+          <div className="dash-card-title">Spesialtips</div>
+          <div className="dash-card-sub">Toppscorer, mester, første mål og mer</div>
+          <div className="dash-stat">
+            <span style={{minWidth:110,fontSize:12,color:"var(--muted)"}}>Besvart</span>
+            <div className="dash-stat-bar"><div className="dash-stat-fill" style={{width:`${(tippedSpec/14)*100}%`}}/></div>
+            <span className="dash-stat-num" style={{color:tippedSpec===14?"var(--green)":"var(--muted)"}}>{tippedSpec}/14</span>
+          </div>
+          <div style={{fontSize:12,color:"var(--muted)",marginTop:8}}>20 poeng per riktig svar</div>
+          <button className="btn-dash" onClick={()=>onNav("special")}>{isSubmitted?"Se spesialtips →":"Fyll inn →"}</button>
+        </div>
+        {/* Box 3: Leaderboard */}
+        <div className="dash-card">
+          <div className="dash-card-icon">📊</div>
+          <div className="dash-card-title">Hvem leder?</div>
+          <div className="dash-card-sub">Oppdateres etter hvert som resultater registreres</div>
+          {leaderboard.length===0&&<div style={{fontSize:13,color:"var(--dim)",textAlign:"center",padding:"10px 0"}}>Ingen poeng ennå</div>}
+          {leaderboard.slice(0,4).map((u,i)=>(
+            <div key={u.id} className="lb-mini-row">
+              <span className="lb-mini-rank">{rankIcon(i)}</span>
+              <span className="lb-mini-name" style={{color:u.id===user.id?"var(--blue)":""}}>{u.name}{u.id===user.id?" (deg)":""}</span>
+              <span className="lb-mini-pts">{u.totalPoints}p</span>
+            </div>
+          ))}
+          <button className="btn-dash outline" style={{marginTop:10}} onClick={()=>onNav("leaderboard")}>Se alle →</button>
+        </div>
+      </div>
+      {/* Send inn-knapp */}
+      {!isSubmitted&&!past&&(
+        <div style={{background:"var(--white)",border:"1.5px solid var(--border)",borderRadius:"var(--r3)",padding:"20px 24px",textAlign:"center",boxShadow:"var(--shadow-sm)"}}>
+          <div style={{fontSize:15,fontWeight:700,marginBottom:6}}>Ferdig med tippingen?</div>
+          <div style={{fontSize:13,color:"var(--muted)",marginBottom:14}}>Send inn for å låse tippingen og motta e-postbekreftelse</div>
+          <button onClick={onSubmit} style={{padding:"12px 28px",background:"var(--green)",color:"white",borderRadius:"var(--r2)",fontSize:15,fontWeight:700,boxShadow:"0 4px 14px rgba(5,150,105,.3)",border:"none",cursor:"pointer",transition:"all .15s"}}>
+            📬 Send inn tipping
+          </button>
+        </div>
+      )}
+      {!isSubmitted&&past&&(
+        <div style={{background:"var(--red-light)",border:"1.5px solid rgba(220,38,38,.3)",borderRadius:"var(--r3)",padding:"20px 24px",textAlign:"center"}}>
+          <div style={{fontSize:15,fontWeight:700,color:"var(--red)",marginBottom:4}}>⏰ Fristen er ute</div>
+          <div style={{fontSize:13,color:"var(--muted)"}}>Tipping for gruppespill er stengt. Sluttspill åpner 27. juni.</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── H/U/B Match card ──
+function MatchCard({m,result,onPick,flags,locked}) {
+  const [saving,setSaving]=useState(false);
+  const isTbd = m.home_team==="TBD";
+  const finished = m.status==="finished";
+  const actualRes = finished&&m.home_score!==null ? (m.home_score>m.away_score?"H":m.home_score<m.away_score?"B":"U") : null;
+  const isCorrect = result&&actualRes&&result===actualRes;
+  const isWrong = result&&actualRes&&result!==actualRes;
+  const resLabel = r => r==="H"?"🏠 Hjemme":r==="U"?"🤝 Uavgjort":"✈️ Borte";
+  async function pick(r){
+    if(locked||finished||saving)return;
+    setSaving(true);
+    try{await onPick(m.id,r);}catch{}
+    setSaving(false);
+  }
+  const cls=`match ${finished?"done":result?"tipped":""} ${locked?"locked":""}`;
+  return(
+    <div className={cls}>
+      <div className="match-top">
+        <span className="match-round">{m.matchday?`Runde ${m.matchday}`:STAGE_NO[m.stage]||m.stage}</span>
+        <span className="match-time">{fmt(m.match_date)}{m.match_time&&<span className="time-chip">{m.match_time}</span>}</span>
+      </div>
+      {isTbd?(
+        <div style={{color:"var(--dim)",fontSize:13,textAlign:"center",padding:"4px 0"}}>{m.label||"Kamp TBD"}</div>
+      ):(
+        <>
+          <div className="match-teams">
+            <div className="team home"><span style={{fontWeight:700}}>{m.home_team}</span><span className="team-flag">{flags[m.home_team]||"🏳"}</span></div>
+            <div className="match-vs">–</div>
+            <div className="team away"><span className="team-flag">{flags[m.away_team]||"🏳"}</span><span style={{fontWeight:700}}>{m.away_team}</span></div>
+          </div>
+          {finished?(
+            <div>
+              <div className="actual-label">Resultat</div>
+              <div className="actual-res">{m.home_score} – {m.away_score}</div>
+            </div>
+          ):(
+            <div className="hub-row">
+              {["H","U","B"].map(r=>(
+                <button key={r} className={`hub-btn ${result===r?"active":""}`} onClick={()=>pick(r)} disabled={locked||saving}>
+                  {r}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+      <div className="match-result">
+        {finished&&result&&!isTbd&&(
+          isCorrect
+            ?<span className="rb correct">✓ Riktig · {resLabel(result)} · +3p</span>
+            :<span className="rb wrong">✗ Feil · Ditt tips: {resLabel(result)}</span>
+        )}
+        {!finished&&result&&!isTbd&&(
+          <span className="rb pending">{resLabel(result)}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Standings ──
+function StandingsInput({group,teams,standings,onSave,locked}) {
+  const [vals,setVals]=useState({1:"",2:"",3:"",4:"",...standings});
+  const [checks,setChecks]=useState({});
+  useEffect(()=>setVals({1:"",2:"",3:"",4:"",...standings}),[standings]);
+  const used=Object.values(vals).filter(Boolean);
+  async function pick(pos,team){
+    setVals(p=>({...p,[pos]:team}));
+    if(!team||locked)return;
+    try{await onSave(group,pos,team);setChecks(p=>({...p,[pos]:true}));setTimeout(()=>setChecks(p=>({...p,[pos]:false})),1500);}catch{}
+  }
+  return(
+    <div className="standings-card">
+      <div className="section-label" style={{marginBottom:12}}>📋 Tabellplassering <span className="section-badge">3p per riktig · +10p bonus for perfekt gruppe</span></div>
+      <div className="standings-grid">
+        {[1,2,3,4].map(pos=>(
+          <div key={pos} className={`standing-row ${vals[pos]?"filled":""}`}>
+            <span className="standing-pos">{pos}.</span>
+            <select className="standing-sel" value={vals[pos]||""} onChange={e=>pick(pos,e.target.value)} disabled={locked}>
+              <option value="">Velg lag…</option>
+              {teams.map(t=>(
+                <option key={t.name} value={t.name} disabled={used.includes(t.name)&&vals[pos]!==t.name}>
+                  {t.flag} {t.name}
+                </option>
+              ))}
+            </select>
+            <span className={`standing-check ${checks[pos]||vals[pos]?"show":""}`}>{checks[pos]?"✓":"·"}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Group Detail ──
+function GroupDetailPage({group,groupsMeta,matches,predictions,standings,flags,onSave,onStandingSave,onBack,onNav,locked}) {
+  const teams = groupsMeta[group]?.teams||[];
+  const gMatches = useMemo(()=>matches.filter(m=>m.stage==="group"&&m.group_name===group),[matches,group]);
+  const predCount = gMatches.filter(m=>predictions[m.id]).length;
+  const standCount = Object.values(standings[group]||{}).filter(Boolean).length;
+  const isComplete = predCount===6&&standCount===4;
+  const groupIdx = GROUPS.indexOf(group);
+  const prevGroup = groupIdx>0?GROUPS[groupIdx-1]:null;
+  const nextGroup = groupIdx<GROUPS.length-1?GROUPS[groupIdx+1]:null;
+  const byMd = {1:[],2:[],3:[]};
+  for(const m of gMatches) if(m.matchday) byMd[m.matchday].push(m);
+  return(
+    <div style={{animation:"fadeIn .2s ease"}}>
+      <div className="page" style={{paddingBottom:100}}>
+        <button className="gd-back" onClick={onBack}>← Tilbake til oversikt</button>
+        <div className="gd-hero">
+          <div className="gd-hero-top">
+            <div className="gd-letter">{group}</div>
+            <div className="gd-hero-text"><h2>Gruppe {group}</h2><p>{teams.map(t=>t.flag).join("  ")} · VM 2026</p></div>
+          </div>
+          <div className="gd-team-badges">
+            {teams.map(t=><div key={t.name} className="gd-badge"><span>{t.flag}</span><span>{t.name}</span></div>)}
+          </div>
+        </div>
+        <div className="gd-progress">
+          <div className="gd-prog-title">Fremdrift</div>
+          <div className="gd-prog-row">
+            <span className="gd-prog-label">Kamptips</span>
+            <div className="gd-prog-track"><div className="gd-prog-fill blue" style={{width:`${(predCount/6)*100}%`}}/></div>
+            <span className={`gd-prog-count ${predCount===6?"done":""}`}>{predCount}/6</span>
+          </div>
+          <div className="gd-prog-row">
+            <span className="gd-prog-label">Tabellplassering</span>
+            <div className="gd-prog-track"><div className="gd-prog-fill green" style={{width:`${(standCount/4)*100}%`}}/></div>
+            <span className={`gd-prog-count ${standCount===4?"done":""}`}>{standCount}/4</span>
+          </div>
+        </div>
+        {isComplete&&(
+          <div className="complete-banner">
+            <div className="cb-icon">🎉</div>
+            <div className="cb-text">
+              <h3>Gruppe {group} er ferdig tippet!</h3>
+              <p>Alle 6 kamper og tabellplassering er fylt inn.</p>
+            </div>
+          </div>
+        )}
+        <StandingsInput group={group} teams={teams} standings={standings[group]||{}} onSave={onStandingSave} locked={locked}/>
+        <div className="matches-card">
+          <div className="section-label" style={{marginBottom:14}}>⚽ Kamper <span className="section-badge">3p riktig utfall (H/U/B)</span></div>
+          {[1,2,3].map(md=>byMd[md].length?(
+            <div key={md}>
+              <div className="md-header">Runde {md}</div>
+              {byMd[md].map(m=><MatchCard key={m.id} m={m} result={predictions[m.id]?.result||predictions[m.id]} flags={flags} onPick={onSave} locked={locked}/>)}
+            </div>
+          ):null)}
+        </div>
+        {/* Sluttspill-info */}
+        <div style={{background:"var(--white)",border:"2px dashed var(--border2)",borderRadius:"var(--r3)",padding:"20px 24px",textAlign:"center",marginBottom:20}}>
+          <div style={{fontSize:22,marginBottom:8}}>🔒</div>
+          <div style={{fontSize:15,fontWeight:700,color:"var(--text)",marginBottom:4}}>Sluttspill</div>
+          <div style={{fontSize:13,color:"var(--muted)"}}>Åpner 27. juni – fyll inn etter at gruppespillet er ferdig</div>
+        </div>
+      </div>
+      <div className="gd-footer">
+        <button className="btn-nav" onClick={()=>prevGroup?onNav(prevGroup):onBack()}>← {prevGroup?`Gruppe ${prevGroup}`:"Oversikt"}</button>
+        <div className="center">Gruppe {group} · {predCount+standCount}/10</div>
+        <button className="btn-nav" disabled={!nextGroup} onClick={()=>nextGroup&&onNav(nextGroup)}>{nextGroup?`Gruppe ${nextGroup} →`:"Ferdig ✓"}</button>
+      </div>
+    </div>
+  );
+}
+
+// ── Groups Overview ──
+function GroupsOverview({matches,predictions,standings,groupsMeta,onSelectGroup}) {
+  const stats = useMemo(()=>{
+    const s={};
+    for(const g of GROUPS){
+      const gm=matches.filter(m=>m.stage==="group"&&m.group_name===g);
+      const pred=gm.filter(m=>predictions[m.id]).length;
+      const stand=Object.values(standings[g]||{}).filter(Boolean).length;
+      s[g]={pred,stand,done:pred===6&&stand===4,partial:pred>0||stand>0};
+    }
+    return s;
+  },[matches,predictions,standings]);
+  const totalPred=Object.values(stats).reduce((s,g)=>s+g.pred,0);
+  const totalStand=Object.values(stats).reduce((s,g)=>s+g.stand,0);
+  const doneGroups=Object.values(stats).filter(g=>g.done).length;
+  return(
+    <div className="page">
+      <div className="prog-banner">
+        <div className="prog-bar-track"><div className="prog-bar-fill" style={{width:`${((totalPred+totalStand)/120)*100}%`}}/></div>
+        <div className="prog-chips">
+          <div className={`prog-chip ${doneGroups===12?"done":""}`}>Grupper ferdig: <strong>{doneGroups}/12</strong></div>
+          <div className="prog-chip">Kamptips: <strong>{totalPred}/72</strong></div>
+          <div className="prog-chip">Tabellsvar: <strong>{totalStand}/48</strong></div>
+        </div>
+      </div>
+      <div className="section-header">
+        <span className="section-title">⚽ Gruppespill</span>
+        <span className="section-chip">12 grupper</span>
+      </div>
+      <div className="groups-grid">
+        {GROUPS.map(g=>{
+          const st=stats[g];const teams=groupsMeta[g]?.teams||[];
+          return(
+            <div key={g} className={`group-card ${st.done?"complete":st.partial?"partial":""}`} onClick={()=>onSelectGroup(g)}>
+              {st.done&&<div className="gc-done-mark">✓</div>}
+              <div className="gc-top">
+                <div className="gc-letter">{g}</div>
+                <div className="gc-info"><div className="gc-title">Gruppe {g}</div><div className="gc-sub">{teams.length} lag · 6 kamper</div></div>
+                <div className={`gc-status ${st.done?"done":st.partial?"partial":""}`}>
+                  {st.done?"✓ Ferdig":st.partial?`${st.pred+st.stand}/10`:"Ikke startet"}
+                </div>
+              </div>
+              <div className="gc-teams">{teams.map(t=><div key={t.name} className="gc-team"><span>{t.flag}</span><span>{t.name}</span></div>)}</div>
+              <span className="gc-arrow">→</span>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{marginTop:28}}>
+        <div className="section-header">
+          <span className="section-title">🏆 Sluttspill</span>
+        </div>
+        <div className="ko-locked">
+          <div className="ko-locked-icon">🔒</div>
+          <div className="ko-locked-title">Sluttspill er ikke åpent ennå</div>
+          <div className="ko-locked-sub">Etter at gruppespillet er ferdig (27. juni) vil du kunne tippe sluttspillkampene her.<br/>Sjekk tilbake etter at alle grupper er avgjort.</div>
+          <div className="ko-locked-date">Åpner 27. juni 2026</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Special ──
+function SpecialView({categories,allTeams,mySpecial,onSave,showToast,locked}) {
+  const [vals,setVals]=useState({});
+  const [savedCats,setSaved]=useState({});
+  useEffect(()=>setVals({...mySpecial}),[mySpecial]);
+  async function save(id){
+    const v=vals[id];if(!v?.toString().trim()||locked)return;
+    try{
+      await onSave(id,v.toString().trim());
+      setSaved(p=>({...p,[id]:true}));setTimeout(()=>setSaved(p=>({...p,[id]:false})),2000);
+    }catch(ex){showToast(ex.message,"bad");}
+  }
+  const answered=Object.keys(mySpecial).length;
+  return(
+    <div className="page">
+      <div className="special-hero">
+        <h2>🌟 Spesialtips</h2>
+        <p>Svar på alle 14 kategorier – 20 poeng per riktig svar</p>
+        <div className="special-progress">
+          <span className="sp-chip">Besvart: {answered}/14</span>
+          <span className="sp-chip">Maks poeng: 280p</span>
+        </div>
+      </div>
+      {locked&&<div style={{background:"var(--amber-light)",border:"1.5px solid rgba(217,119,6,.3)",borderRadius:"var(--r2)",padding:"10px 16px",marginBottom:16,fontSize:13,color:"var(--amber)",fontWeight:600}}>🔒 Tipping er låst</div>}
+      <div className="special-grid">
+        {categories.map(cat=>(
+          <div key={cat.id} className={`sc ${mySpecial[cat.id]?"answered":""}`}>
+            <div className="sc-top">
+              <span className="sc-label">{cat.label}</span>
+              <span className="sc-pts">20p</span>
+            </div>
+            <div className="sc-desc">{cat.desc}</div>
+            <div className="sc-input-row">
+              {cat.type==="team"?(
+                <select className="inp" value={vals[cat.id]||""} disabled={locked} onChange={e=>{
+                  const v=e.target.value;setVals(p=>({...p,[cat.id]:v}));
+                  if(v&&!locked) api(`/api/predictions/special/${cat.id}`,{method:"POST",body:JSON.stringify({value:v})})
+                    .then(()=>{setSaved(p=>({...p,[cat.id]:true}));setTimeout(()=>setSaved(p=>({...p,[cat.id]:false})),2000);})
+                    .catch(ex=>showToast(ex.message,"bad"));
+                }}>
+                  <option value="">Velg lag…</option>
+                  {allTeams.map(t=><option key={t} value={t}>{t}</option>)}
+                </select>
+              ):(
+                <>
+                  <input className="inp" type={cat.type==="number"?"number":"text"}
+                    placeholder={cat.type==="number"?"Antall…":"Etternavn / navn…"}
+                    value={vals[cat.id]||""} disabled={locked}
+                    onChange={e=>setVals(p=>({...p,[cat.id]:e.target.value}))}
+                    onKeyDown={e=>e.key==="Enter"&&save(cat.id)}/>
+                  {!locked&&<button className="btn-save" onClick={()=>save(cat.id)}>Lagre</button>}
+                </>
+              )}
+            </div>
+            {savedCats[cat.id]&&<div className="sc-saved">✓ Lagret!</div>}
+            {mySpecial[cat.id]&&!savedCats[cat.id]&&<div className="sc-cur">Nåværende: <strong>{mySpecial[cat.id]}</strong></div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Leaderboard ──
+function LeaderboardView({currentUser}) {
+  const [data,setData]=useState(null);
+  const [tick,setTick]=useState(0);
+  useEffect(()=>{api("/api/leaderboard").then(setData);},[tick]);
+  useEffect(()=>{const id=setInterval(()=>setTick(t=>t+1),30000);return()=>clearInterval(id);},[]);
+  if(!data) return <div className="loader"><div className="spin"/></div>;
+  const max=Math.max(...data.map(u=>u.totalPoints),1);
+  return(
+    <div className="page">
+      <div className="prog-chips" style={{marginBottom:18}}>
+        <div className="prog-chip">Deltakere: <strong>{data.length}</strong></div>
+        <div className="prog-chip">Leder: <strong>{data[0]?.totalPoints||0}p</strong></div>
+        <div className="prog-chip">Oppdateres hvert 30s</div>
+      </div>
+      <div className="lb-wrap">
+        <div className="lb-hdr"><div>#</div><div>Deltaker</div><div>Poeng</div><div>Statistikk</div></div>
+        {data.map((u,i)=>(
+          <div key={u.id} className={`lb-row ${u.id===currentUser.id?"me":""}`}>
+            <div className="lb-rank">{rankIcon(i)}</div>
+            <div className="lb-name">
+              <div className="name">{u.name}{u.id===currentUser.id&&<span className="you">DEG</span>}</div>
+              <div className="sub">{u.predicted} tips · {u.specialCount} spesialtips</div>
+              {u.isSubmitted&&<div className="sub-submitted">✓ Sendt inn</div>}
+            </div>
+            <div className="lb-pts">
+              <div className="pts">{u.totalPoints}</div>
+              <div className="bar"><div className="bar-fill" style={{width:`${(u.totalPoints/max)*100}%`}}/></div>
+              <div className="sub">Kam:{u.matchPoints} · Tab:{u.standingsPoints+u.standingsBonus} · Spes:{u.specialPoints}</div>
+            </div>
+            <div className="lb-stats">
+              <span className="st">✓ {u.correctResults} riktige</span>
+              {u.standingsBonus>0&&<span className="st">🎯 +{u.standingsBonus}p bonus</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="lb-legend">
+        <span>⚽ Gruppe: 3p riktig utfall (H/U/B)</span>
+        <span>📋 Tabellplass: 3p · +10p bonus for perfekt gruppe</span>
+        <span>🌟 Spesialtips: 20p</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Admin: User Modal ──
+function UserModal({userId,onClose,categories,flags}) {
+  const [data,setData]=useState(null);const [tab,setTab]=useState("matches");
+  useEffect(()=>{api(`/api/admin/user/${userId}/predictions`).then(setData);},[userId]);
+  if(!data) return <div className="overlay"><div className="modal"><div className="loader"><div className="spin"/></div></div></div>;
+  const {user,predictions,specials,standings}=data;
+  const spMap=Object.fromEntries(specials.map(s=>[s.category,s.value]));
+  const byGroup={};for(const r of standings){if(!byGroup[r.group_name])byGroup[r.group_name]=[];byGroup[r.group_name].push(r);}
+  const resLabel = r => r==="H"?"🏠 H":r==="U"?"🤝 U":r==="B"?"✈️ B":r||"–";
+  const actualRes = (ah,aa) => ah===null?"–":ah>aa?"🏠 H":ah<aa?"✈️ B":"🤝 U";
+  return(
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-top">
+          <div className="modal-title">👤 {user?.name} <span style={{fontSize:13,color:"var(--muted)",fontWeight:400}}>{user?.email}</span></div>
+          <button className="btn-close" onClick={onClose}>Lukk ✕</button>
+        </div>
+        {user?.submitted_at&&<div style={{fontSize:12,color:"var(--green)",fontWeight:700,marginBottom:12}}>✓ Sendt inn: {new Date(user.submitted_at).toLocaleString("no-NO")}</div>}
+        <div className="modal-tabs">
+          {[["matches","⚽ Kamper"],["standings","📋 Tabell"],["special","🌟 Spesialtips"]].map(([k,l])=>(
+            <button key={k} className={`mtab ${tab===k?"on":""}`} onClick={()=>setTab(k)}>{l}</button>
+          ))}
+        </div>
+        {tab==="matches"&&(
+          <div style={{maxHeight:"60vh",overflowY:"auto"}}>
+            <table className="pred-table">
+              <thead><tr><th>Kamp</th><th>Runde</th><th>Dato</th><th>Tips</th><th>Fasit</th><th>Pts</th></tr></thead>
+              <tbody>
+                {predictions.filter(p=>p.stage==="group").map(p=>{
+                  const ptsOk = p.status==="finished"&&p.actual_home!==null;
+                  const actR = ptsOk?actualRes(p.actual_home,p.actual_away):null;
+                  const pts = ptsOk&&p.result===actR.replace(/[^HUB]/g,"")?3:0;
+                  return(
+                    <tr key={p.match_id}>
+                      <td style={{fontWeight:700}}>{p.home_team} – {p.away_team}</td>
+                      <td style={{color:"var(--muted)"}}>Gr.{p.group_name} R{p.matchday}</td>
+                      <td style={{color:"var(--dim)",fontSize:12}}>{fmt(p.match_date)}</td>
+                      <td><strong>{resLabel(p.result)}</strong></td>
+                      <td>{actR||<span style={{color:"var(--dim)"}}>–</span>}</td>
+                      <td style={{color:ptsOk?(p.result===actR.replace(/[^HUB]/g,"")?"var(--green)":"var(--red)"):"var(--dim)"}}>{ptsOk?(p.result===actR.replace(/[^HUB]/g,"")?"✓ 3p":"✗ 0p"):"–"}</td>
+                    </tr>
+                  );
+                })}
+                {!predictions.length&&<tr><td colSpan="6"><div className="empty">Ingen kamptips</div></td></tr>}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {tab==="standings"&&(
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:10,maxHeight:"60vh",overflowY:"auto"}}>
+            {Object.entries(byGroup).sort(([a],[b])=>a.localeCompare(b)).map(([g,rows])=>(
+              <div key={g} style={{background:"var(--bg)",border:"1px solid var(--border)",borderRadius:12,padding:12}}>
+                <div style={{fontWeight:800,color:"var(--blue)",marginBottom:8,fontSize:14}}>Gruppe {g}</div>
+                {[1,2,3,4].map(pos=>{const r=rows.find(r=>r.position===pos);return(
+                  <div key={pos} style={{display:"flex",gap:8,fontSize:13,padding:"3px 0",alignItems:"center"}}>
+                    <span style={{color:"var(--dim)",minWidth:20,fontWeight:800}}>{pos}.</span>
+                    <span>{r?<span>{flags[r.team]||""} {r.team}</span>:<span style={{color:"var(--dim)"}}>–</span>}</span>
+                  </div>
+                );})}
+              </div>
+            ))}
+            {!Object.keys(byGroup).length&&<div className="empty" style={{gridColumn:"1/-1"}}>Ingen tabellsvar</div>}
+          </div>
+        )}
+        {tab==="special"&&(
+          <table className="pred-table">
+            <thead><tr><th>Kategori</th><th>Svar</th></tr></thead>
+            <tbody>{categories.map(cat=>(
+              <tr key={cat.id}><td>{cat.label}</td>
+                <td>{spMap[cat.id]?<strong>{spMap[cat.id]}</strong>:<span style={{color:"var(--dim)"}}>–</span>}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Admin ──
+function AdminView({matches,categories,allTeams,flags,showToast,onRefresh}) {
+  const [tab,setTab]=useState("matches");
+  const [stage,setStage]=useState("group");const [group,setGroup]=useState("A");
+  const [edits,setEdits]=useState({});
+  const [spAnswers,setSpAnswers]=useState({});const [spInputs,setSpInputs]=useState({});
+  const [stAnswers,setStAnswers]=useState({});const [stInputs,setStInputs]=useState({});
+  const [users,setUsers]=useState([]);const [selUser,setSelUser]=useState(null);
+
+  useEffect(()=>{
+    api("/api/admin/special-answers").then(d=>{setSpAnswers(d);setSpInputs({...d});}).catch(()=>{});
+    api("/api/admin/standings-answers").then(d=>{setStAnswers(d);setStInputs(JSON.parse(JSON.stringify(d)));}).catch(()=>{});
+    api("/api/admin/users").then(setUsers).catch(()=>{});
+  },[]);
+
+  const filtered=matches.filter(m=>m.stage===stage&&(stage!=="group"||m.group_name===group));
+
+  async function saveMatch(id){
+    const e=edits[id];if(!e)return;
+    const body={};
+    if(e.h!==""&&e.a!==""){body.homeScore=+e.h;body.awayScore=+e.a;body.status="finished";}
+    if(e.ht)body.homeTeam=e.ht;if(e.at)body.awayTeam=e.at;
+    if(e.time)body.matchTime=e.time;
+    if(!Object.keys(body).length)return;
+    try{await api(`/api/admin/match/${id}`,{method:"POST",body:JSON.stringify(body)});showToast("✓ Kamp oppdatert");onRefresh();}
+    catch(ex){showToast(ex.message,"bad");}
+  }
+  async function saveSpecial(id){
+    const v=spInputs[id];if(!v?.trim())return;
+    try{await api(`/api/admin/special-answer/${id}`,{method:"POST",body:JSON.stringify({value:v.trim()})});setSpAnswers(p=>({...p,[id]:v.trim()}));showToast("✓ Fasit lagret");}
+    catch(ex){showToast(ex.message,"bad");}
+  }
+  async function saveStanding(g,pos,team){
+    if(!team)return;
+    try{await api(`/api/admin/standings-answer/${g}/${pos}`,{method:"POST",body:JSON.stringify({team})});setStAnswers(p=>({...p,[g]:{...(p[g]||{}),[pos]:team}}));showToast("✓ Lagret");}
+    catch(ex){showToast(ex.message,"bad");}
+  }
+
+  return(
+    <div className="page">
+      <div className="admin-tabs">
+        {[["matches","⚽ Resultater"],["special","🌟 Spesialtips fasit"],["standings","📋 Tabellsvar fasit"],["users","👥 Brukere"]].map(([k,l])=>(
+          <button key={k} className={`atab ${tab===k?"on":""}`} onClick={()=>setTab(k)}>{l}</button>
+        ))}
+      </div>
+
+      {tab==="matches"&&(
+        <div className="admin-card">
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+            <div className="admin-card-h" style={{marginBottom:0}}>Legg inn kampresultater</div>
+            <a href="/api/admin/export" className="export-btn" style={{textDecoration:"none"}} onClick={e=>{const t=localStorage.getItem("token");if(!t){e.preventDefault();showToast("Logg inn som admin","bad");}}}>
+              📥 Last ned Excel
+            </a>
+          </div>
+          <div className="filter-row">
+            <span className="filter-lbl">Runde:</span>
+            <select className="inp" style={{flex:1}} value={stage} onChange={e=>setStage(e.target.value)}>
+              {["group","r32","r16","qf","sf","3rd","final"].map(s=><option key={s} value={s}>{STAGE_NO[s]||s}</option>)}
+            </select>
+            {stage==="group"&&<>
+              <span className="filter-lbl">Gruppe:</span>
+              <select className="inp" style={{flex:1}} value={group} onChange={e=>setGroup(e.target.value)}>
+                {GROUPS.map(g=><option key={g} value={g}>Gruppe {g}</option>)}
+              </select>
+            </>}
+          </div>
+          {filtered.map(m=>{
+            const e=edits[m.id]||{h:m.home_score??"",a:m.away_score??"",ht:"",at:"",time:m.match_time||""};
+            const isTbd=m.home_team==="TBD";
+            return(
+              <div key={m.id} className="adm-match">
+                <div className="adm-name">{isTbd?(m.label||`Kamp ${m.id}`):`${flags[m.home_team]||""} ${m.home_team} – ${m.away_team} ${flags[m.away_team]||""}`}</div>
+                <div className="adm-date">{fmt(m.match_date)}</div>
+                {isTbd&&<>
+                  <input className="inp adm-si" style={{width:120,height:34,fontSize:12}} placeholder="Hjemmelag" value={e.ht||""} onChange={ev=>setEdits(p=>({...p,[m.id]:{...e,ht:ev.target.value}}))}/>
+                  <input className="inp adm-si" style={{width:120,height:34,fontSize:12}} placeholder="Bortelag" value={e.at||""} onChange={ev=>setEdits(p=>({...p,[m.id]:{...e,at:ev.target.value}}))}/>
+                </>}
+                <input className="inp adm-si adm-time" placeholder="21:00" value={e.time||""} onChange={ev=>setEdits(p=>({...p,[m.id]:{...e,time:ev.target.value}}))}/>
+                <input className="adm-si" type="number" min="0" max="20" placeholder="H" value={e.h} onChange={ev=>setEdits(p=>({...p,[m.id]:{...e,h:ev.target.value}}))}/>
+                <span style={{color:"var(--dim)",fontWeight:800}}>–</span>
+                <input className="adm-si" type="number" min="0" max="20" placeholder="B" value={e.a} onChange={ev=>setEdits(p=>({...p,[m.id]:{...e,a:ev.target.value}}))}/>
+                <button className="btn-adm" onClick={()=>saveMatch(m.id)}>{m.status==="finished"?"Oppdater":"Sett resultat"}</button>
+                {m.status==="finished"&&<span className="adm-done">✓ Ferdig</span>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {tab==="special"&&(
+        <div className="admin-card">
+          <div className="admin-card-h">Fasit for spesialtips (20p per riktig)</div>
+          <div className="special-grid">
+            {categories.map(cat=>(
+              <div key={cat.id} className="sc">
+                <div className="sc-top"><span className="sc-label">{cat.label}</span></div>
+                <div className="sc-desc">{cat.desc}</div>
+                <div className="sc-input-row">
+                  {cat.type==="team"?(
+                    <select className="inp" value={spInputs[cat.id]||""} onChange={e=>setSpInputs(p=>({...p,[cat.id]:e.target.value}))}>
+                      <option value="">Velg fasit…</option>
+                      {allTeams.map(t=><option key={t} value={t}>{t}</option>)}
+                    </select>
+                  ):(
+                    <input className="inp" type={cat.type==="number"?"number":"text"} value={spInputs[cat.id]||""} onChange={e=>setSpInputs(p=>({...p,[cat.id]:e.target.value}))}/>
+                  )}
+                  <button className="btn-save" onClick={()=>saveSpecial(cat.id)}>Lagre</button>
+                </div>
+                {spAnswers[cat.id]&&<div className="sc-saved">✓ Fasit: {spAnswers[cat.id]}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tab==="standings"&&(
+        <div className="admin-card">
+          <div className="admin-card-h">Fasit for tabellplasseringer</div>
+          <div className="groups-grid">
+            {GROUPS.map(g=>{
+              const gTeams=[...new Set(matches.filter(m=>m.group_name===g).flatMap(m=>[m.home_team,m.away_team]).filter(t=>t!=="TBD"))].sort();
+              const inp=stInputs[g]||{};const cur=stAnswers[g]||{};
+              return(
+                <div key={g} style={{background:"var(--bg)",border:"1.5px solid var(--border)",borderRadius:14,padding:14}}>
+                  <div style={{fontWeight:800,color:"var(--blue)",marginBottom:10,fontSize:15}}>Gruppe {g}</div>
+                  {[1,2,3,4].map(pos=>(
+                    <div key={pos} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                      <span style={{minWidth:20,color:"var(--dim)",fontWeight:800}}>{pos}.</span>
+                      <select className="inp" style={{flex:1,fontSize:12,padding:"6px 10px"}} value={inp[pos]||""} onChange={e=>{const v=e.target.value;setStInputs(p=>({...p,[g]:{...(p[g]||{}),[pos]:v}}));if(v)saveStanding(g,pos,v);}}>
+                        <option value="">Velg lag…</option>
+                        {gTeams.map(t=><option key={t} value={t}>{t}</option>)}
+                      </select>
+                      {cur[pos]&&<span style={{fontSize:11,color:"var(--green)",fontWeight:700}}>✓</span>}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {tab==="users"&&(
+        <div className="admin-card">
+          <div className="admin-card-h">Brukeroversikt – klikk for å se tips</div>
+          <div className="users-grid">
+            {users.map(u=>(
+              <div key={u.id} className={`user-card ${u.submitted_at?"submitted":""}`} onClick={()=>setSelUser(u.id)}>
+                <div className="user-card-icon">{u.is_admin?"👑":"👤"}</div>
+                <div className="user-card-name">{u.name}</div>
+                <div className="user-card-sub">{u.email}</div>
+                {u.submitted_at&&<div style={{fontSize:10,color:"var(--green)",fontWeight:700,marginTop:4}}>✓ Sendt inn</div>}
+              </div>
+            ))}
+          </div>
+          <div style={{marginTop:18}}>
+            <a href="/api/admin/export" className="export-btn" onClick={e=>{const t=localStorage.getItem("token");if(t){const url=new URL(e.currentTarget.href);fetch(url.pathname,{headers:{Authorization:"Bearer "+t}}).then(r=>r.blob()).then(b=>{const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="vm2026-tipping.xlsx";a.click();});e.preventDefault();}else{e.preventDefault();showToast("Logg inn som admin","bad");}}}>
+              📥 Last ned alle tips som Excel
+            </a>
+          </div>
+        </div>
+      )}
+      {selUser&&<UserModal userId={selUser} onClose={()=>setSelUser(null)} categories={categories} flags={flags}/>}
+    </div>
+  );
+}
+
+// ── APP ──
+function App() {
+  const [user,setUser]=useState(null);
+  const [loading,setLoading]=useState(true);
+  const [tab,setTab]=useState("home");
+  const [selectedGroup,setSelectedGroup]=useState(null);
+  const [matches,setMatches]=useState([]);
+  const [predictions,setPredictions]=useState({});
+  const [standings,setStandings]=useState({});
+  const [mySpecial,setMySpecial]=useState({});
+  const [flags,setFlags]=useState({});
+  const [groupsMeta,setGroupsMeta]=useState({});
+  const [categories,setCategories]=useState([]);
+  const [allTeams,setAllTeams]=useState([]);
+  const [leaderboard,setLeaderboard]=useState([]);
+  const [toast,showToast]=useToast();
+  const [showSubmit,setShowSubmit]=useState(false);
+  const [submitLoading,setSubmitLoading]=useState(false);
+
+  useEffect(()=>{
+    const token=localStorage.getItem("token");
+    if(!token){setLoading(false);return;}
+    api("/api/auth/me").then(u=>setUser(u)).catch(()=>localStorage.removeItem("token")).finally(()=>setLoading(false));
+  },[]);
+  useEffect(()=>{if(user)loadAll();},[user]);
+
+  async function loadAll(){
+    const [ms,preds,cats,teams,fl,gm,sp,st,lb]=await Promise.all([
+      api("/api/matches"),api("/api/my-predictions"),api("/api/special-categories"),
+      api("/api/teams"),api("/api/teams-with-flags"),api("/api/groups-meta"),
+      api("/api/my-special"),api("/api/my-standings"),api("/api/leaderboard"),
+    ]);
+    setMatches(ms);
+    // predictions: array of {match_id, result}
+    const predMap={};
+    for(const p of preds) predMap[p.match_id]={result:p.result};
+    setPredictions(predMap);
+    setCategories(cats);setAllTeams(teams);setFlags(fl);setGroupsMeta(gm);
+    setMySpecial(sp);setStandings(st);setLeaderboard(lb);
+  }
+  async function refreshMatches(){const ms=await api("/api/matches");setMatches(ms);}
+
+  async function handleSave(matchId,result){
+    await api(`/api/predictions/match/${matchId}`,{method:"POST",body:JSON.stringify({result})});
+    setPredictions(p=>({...p,[matchId]:{result}}));
+  }
+  async function handleSpecialSave(cat,value){
+    await api(`/api/predictions/special/${cat}`,{method:"POST",body:JSON.stringify({value})});
+    setMySpecial(p=>({...p,[cat]:value}));
+  }
+  async function handleStandingSave(group,pos,team){
+    await api(`/api/predictions/standings/${group}/${pos}`,{method:"POST",body:JSON.stringify({team})});
+    setStandings(p=>({...p,[group]:{...(p[group]||{}),[pos]:team}}));
+  }
+  async function handleSubmit(){
+    setSubmitLoading(true);
+    try{
+      await api("/api/submit",{method:"POST"});
+      setUser(u=>({...u,submittedAt:new Date().toISOString()}));
+      setShowSubmit(false);
+      showToast("✅ Tipping sendt inn og låst! Sjekk e-posten din.","ok");
+    }catch(ex){showToast(ex.message,"bad");}finally{setSubmitLoading(false);}
+  }
+
+  if(loading) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh"}}><div className="spin"/></div>;
+  if(!user) return <LandingPage onLogin={u=>{setUser(u);}}/>;
+
+  const isLocked = !!user.submittedAt || isPastDeadline();
+  const navTabs=[
+    {id:"home",label:"🏠 Hjem"},
+    {id:"groups",label:"⚽ Gruppespill"},
+    {id:"special",label:"🌟 Spesialtips"},
+    {id:"leaderboard",label:"📊 Ledertavle"},
+    ...(user.isAdmin?[{id:"admin",label:"⚙️ Admin"}]:[]),
+  ];
+
+  return(
+    <div className="shell">
+      <header className="topbar">
+        <div className="topbar-l">
+          <span className="topbar-ball">⚽</span>
+          <div><div className="topbar-brand">VM-konkurranse 2026</div><div className="topbar-year">USA · Canada · Mexico</div></div>
+        </div>
+        <div className="topbar-r">
+          <span className="topbar-user">{user.name}{user.isAdmin?" 👑":""}</span>
+          <button className="btn-ghost" onClick={()=>{localStorage.removeItem("token");setUser(null);}}>Logg ut</button>
+        </div>
+      </header>
+      <nav>
+        {navTabs.map(t=>(
+          <button key={t.id} className={`nb ${tab===t.id&&!selectedGroup?"on":""}`}
+            onClick={()=>{setTab(t.id);setSelectedGroup(null);}}>
+            {t.label}
+          </button>
+        ))}
+      </nav>
+
+      {tab==="home"&&
+        <Dashboard user={user} matches={matches} predictions={predictions} standings={standings}
+          mySpecial={mySpecial} leaderboard={leaderboard}
+          onNav={t=>{setTab(t);setSelectedGroup(null);}}
+          onSubmit={()=>setShowSubmit(true)}/>}
+
+      {tab==="groups"&&!selectedGroup&&
+        <GroupsOverview matches={matches} predictions={predictions} standings={standings}
+          groupsMeta={groupsMeta} onSelectGroup={g=>{setSelectedGroup(g);setTab("groups");}}/>}
+
+      {tab==="groups"&&selectedGroup&&
+        <GroupDetailPage group={selectedGroup} groupsMeta={groupsMeta} matches={matches}
+          predictions={predictions} standings={standings} flags={flags}
+          onSave={handleSave} onStandingSave={handleStandingSave} locked={isLocked}
+          onBack={()=>setSelectedGroup(null)} onNav={g=>setSelectedGroup(g)}/>}
+
+      {tab==="special"&&
+        <SpecialView categories={categories} allTeams={allTeams} mySpecial={mySpecial}
+          onSave={handleSpecialSave} showToast={showToast} locked={isLocked}/>}
+
+      {tab==="leaderboard"&&<LeaderboardView currentUser={user}/>}
+
+      {tab==="admin"&&user.isAdmin&&
+        <AdminView matches={matches} categories={categories} allTeams={allTeams}
+          flags={flags} showToast={showToast} onRefresh={refreshMatches}/>}
+
+      {showSubmit&&
+        <SubmitModal
+          onClose={()=>setShowSubmit(false)} onConfirm={handleSubmit}
+          predictions={predictions} standings={standings} mySpecial={mySpecial}
+          loading={submitLoading}/>}
+
+      {toast&&<div className={`toast ${toast.type}`}>{toast.msg}</div>}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
