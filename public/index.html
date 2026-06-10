@@ -840,6 +840,7 @@ function SpecialView({categories,allTeams,mySpecial,onSave,showToast,locked,onNa
     const v=vals[id];if(!v?.toString().trim()||locked)return;
     try{
       await onSave(id,v.toString().trim());
+      setVals(p=>({...p,[id]:v.toString().trim()}));
       setSaved(p=>({...p,[id]:true}));setTimeout(()=>setSaved(p=>({...p,[id]:false})),2000);
     }catch(ex){showToast(ex.message,"bad");}
   }
