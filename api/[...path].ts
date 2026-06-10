@@ -242,7 +242,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const userSpecials = Object.entries(specMap[user.id] || {});
       let specialPts = 0;
       for (const [cat, val] of userSpecials) {
-        if (specialAnswers[cat] && val.toLowerCase() === specialAnswers[cat]) specialPts += 20;
+        if (specialAnswers[cat] && val.toLowerCase() === specialAnswers[cat]) {
+          const catDef = specialCategories.find(c => c.id === cat);
+          specialPts += catDef?.points ?? 10;
+        }
       }
 
       let standingsPts = 0, standingBonus = 0;

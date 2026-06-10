@@ -85,14 +85,14 @@ export const teamFlags: Record<string, string> = Object.values(groups).reduce((a
 
 // Special categories (20 pts each)
 export const specialCategories = [
-  { id: "champion",          label: "🏆 Seierherrer",               desc: "Navn på laget som vinner VM",               type: "team"   },
-  { id: "runner_up",         label: "🥈 Finalist",                  desc: "Navn på laget som taper finalen",           type: "team"   },
-  { id: "top_scorer",        label: "⚽ Toppscorer",                 desc: "Navn på toppscoreren",                      type: "player" },
-  { id: "first_goal",        label: "🚀 Første målscorer",           desc: "Navn på spiller som scorer turneringens første mål", type: "player" },
-  { id: "most_goals_team",   label: "🔥 Mestscorende lag",           desc: "Navn på laget som scorer flest mål",        type: "team"   },
-  { id: "best_defense",      label: "🧱 Beste forsvar",              desc: "Navn på laget som slipper inn færrest mål", type: "team"   },
-  { id: "total_goals",       label: "📊 Totalt antall mål",          desc: "Antall mål scoret i turneringen",           type: "number" },
-  { id: "red_card_team",     label: "🐷 Griselag",                   desc: "Navn på laget som får rødt kort",           type: "team"   },
-  { id: "penalty_shootouts", label: "🎯 Antall straffekonker",       desc: "Antall straffekonkurranser i turneringen",  type: "number" },
-  { id: "golden_glove",      label: "🧤 Golden Glove",               desc: "Navn på beste keeper",                      type: "player" },
+  { id: "champion",          label: "🏆 Seierherrer",               desc: "Navn på laget som vinner VM",               type: "team",   points: 20 },
+  { id: "runner_up",         label: "🥈 Finalist",                  desc: "Navn på laget som taper finalen",           type: "team",   points: 10 },
+  { id: "top_scorer",        label: "⚽ Toppscorer",                 desc: "Navn på toppscoreren",                      type: "player", points: 10 },
+  { id: "first_goal",        label: "🚀 Første målscorer",           desc: "Navn på spiller som scorer turneringens første mål", type: "player", points: 10 },
+  { id: "most_goals_team",   label: "🔥 Mestscorende lag",           desc: "Navn på laget som scorer flest mål",        type: "team",   points: 10 },
+  { id: "best_defense",      label: "🧱 Beste forsvar",              desc: "Navn på laget som slipper inn færrest mål", type: "team",   points: 10 },
+  { id: "total_goals",       label: "📊 Totalt antall mål",          desc: "Antall mål scoret i turneringen",           type: "number", points: 10 },
+  { id: "red_card_team",     label: "🐷 Griselag",                   desc: "Navn på laget som får rødt kort",           type: "team",   points: 10 },
+  { id: "penalty_shootouts", label: "🎯 Antall straffekonker",       desc: "Antall straffekonkurranser i turneringen",  type: "number", points: 10 },
+  { id: "golden_glove",      label: "🧤 Golden Glove",               desc: "Navn på beste keeper",                      type: "player", points: 10 },
 ];

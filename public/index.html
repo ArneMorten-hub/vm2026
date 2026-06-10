@@ -74,18 +74,18 @@ nav::-webkit-scrollbar{display:none}
 .page{max-width:980px;margin:0 auto;padding:28px 20px 80px;width:100%}
 
 /* ── Dashboard ── */
-.dash-hero{text-align:center;padding:9px 20px 8px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:white;margin:-28px -20px 16px;border-radius:0 0 var(--r4) var(--r4)}
+.dash-hero{text-align:center;padding:12px 20px 10px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:white;margin:-28px -20px 16px;border-radius:0 0 var(--r4) var(--r4)}
 .dash-ball{display:none}
-.dash-title{font-size:16px;font-weight:800;letter-spacing:-.3px;margin-bottom:1px}
-.dash-greeting{font-size:13px;opacity:.9}
+.dash-title{font-size:20px;font-weight:800;letter-spacing:-.4px;margin-bottom:2px}
+.dash-greeting{font-size:14px;opacity:.9}
 .deadline-banner{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r3);padding:20px 24px;margin-bottom:24px;text-align:center;box-shadow:var(--shadow)}
 .deadline-text{font-size:14px;color:var(--muted);margin-bottom:12px}
 .deadline-text strong{color:var(--text)}
-.countdown{display:flex;align-items:center;justify-content:center;gap:8px}
-.cd-unit{display:flex;flex-direction:column;align-items:center;background:var(--blue-light);border:1.5px solid var(--blue-mid);border-radius:var(--r2);padding:10px 16px;min-width:64px}
-.cd-num{font-size:26px;font-weight:800;color:var(--blue);line-height:1}
-.cd-label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
-.cd-sep{font-size:22px;font-weight:800;color:var(--blue-mid);margin-bottom:12px}
+.countdown{display:flex;align-items:center;justify-content:center;gap:6px}
+.cd-unit{display:flex;flex-direction:column;align-items:center;background:var(--blue-light);border:1.5px solid var(--blue-mid);border-radius:var(--r2);padding:6px 10px;min-width:46px}
+.cd-num{font-size:18px;font-weight:800;color:var(--blue);line-height:1}
+.cd-label{font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.cd-sep{font-size:15px;font-weight:800;color:var(--blue-mid);margin-bottom:8px}
 .deadline-passed{font-size:16px;font-weight:700;color:var(--red);background:var(--red-light);padding:10px 20px;border-radius:var(--r2);display:inline-block}
 .dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
 @media(max-width:680px){.dash-grid{grid-template-columns:1fr}}
@@ -532,7 +532,9 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,onN
       )}
       <div className="dash-grid">
         {/* Box 1: Gruppespill */}
-        <div className="dash-card">
+        {(()=>{const done1=tipped===72&&tippedStand===48;return(
+        <div className="dash-card" style={done1?{borderColor:"rgba(5,150,105,.5)",boxShadow:"0 0 0 1px rgba(5,150,105,.2),var(--shadow)"}:{}}>
+          {done1&&<div style={{position:"absolute",top:12,right:12,width:22,height:22,background:"var(--green)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:12,fontWeight:900}}>✓</div>}
           <div className="dash-card-icon">🏟️</div>
           <div className="dash-card-title">Bli med i konkurransen</div>
           <div className="dash-card-sub">Tipp resultat i gruppespill</div>
@@ -546,21 +548,25 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,onN
             <div className="dash-stat-bar"><div className="dash-stat-fill green" style={{width:`${(tippedStand/totalStand)*100}%`}}/></div>
             <span className="dash-stat-num" style={{color:tippedStand===48?"var(--green)":"var(--muted)"}}>{tippedStand}/48</span>
           </div>
-          <button className="btn-dash" onClick={()=>onNav("groups")}>{isSubmitted?"Se gruppetips →":"Start tipping →"}</button>
+          <button className={`btn-dash${done1?" green":""}`} onClick={()=>onNav("groups")}>{isSubmitted?"Se gruppetips →":done1?"✓ Gruppetips ferdig":"Start tipping →"}</button>
         </div>
+        )})()}
         {/* Box 2: Spesialtips */}
-        <div className="dash-card">
+        {(()=>{const done2=tippedSpec===10;return(
+        <div className="dash-card" style={done2?{borderColor:"rgba(5,150,105,.5)",boxShadow:"0 0 0 1px rgba(5,150,105,.2),var(--shadow)"}:{}}>
+          {done2&&<div style={{position:"absolute",top:12,right:12,width:22,height:22,background:"var(--green)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:12,fontWeight:900}}>✓</div>}
           <div className="dash-card-icon">🌟</div>
           <div className="dash-card-title">Spesialtips</div>
           <div className="dash-card-sub">Toppscorer, mester, første mål og mer</div>
           <div className="dash-stat">
             <span style={{minWidth:110,fontSize:12,color:"var(--muted)"}}>Besvart</span>
             <div className="dash-stat-bar"><div className="dash-stat-fill" style={{width:`${(tippedSpec/10)*100}%`}}/></div>
-            <span className="dash-stat-num" style={{color:tippedSpec===10?"var(--green)":"var(--muted)"}}>{tippedSpec}/10</span>
+            <span className="dash-stat-num" style={{color:done2?"var(--green)":"var(--muted)"}}>{tippedSpec}/10</span>
           </div>
-          <div style={{fontSize:12,color:"var(--muted)",marginTop:8}}>20 poeng per riktig svar</div>
-          <button className="btn-dash" onClick={()=>onNav("special")}>{isSubmitted?"Se spesialtips →":"Fyll inn →"}</button>
+          <div style={{fontSize:12,color:"var(--muted)",marginTop:8}}>10–20 poeng per riktig svar</div>
+          <button className={`btn-dash${done2?" green":""}`} onClick={()=>onNav("special")}>{isSubmitted?"Se spesialtips →":done2?"✓ Spesialtips ferdig":"Fyll inn →"}</button>
         </div>
+        )})()}
         {/* Box 3: Leaderboard */}
         <div className="dash-card">
           <div className="dash-card-icon">📊</div>
@@ -845,10 +851,10 @@ function SpecialView({categories,allTeams,mySpecial,onSave,showToast,locked,onNa
     <div className="page">
       <div className="special-hero">
         <h2>🌟 Spesialtips</h2>
-        <p>Svar på alle {categories.length} kategorier – 20 poeng per riktig svar</p>
+        <p>Svar på alle {categories.length} kategorier – 20p for vinner, 10p for resten</p>
         <div className="special-progress">
           <span className="sp-chip">Besvart: {answered}/{categories.length}</span>
-          <span className="sp-chip">Maks poeng: {categories.length*20}p</span>
+          <span className="sp-chip">Maks poeng: {categories.reduce((s,c)=>s+c.points,0)}p</span>
         </div>
       </div>
       {locked&&<div style={{background:"var(--amber-light)",border:"1.5px solid rgba(217,119,6,.3)",borderRadius:"var(--r2)",padding:"10px 16px",marginBottom:16,fontSize:13,color:"var(--amber)",fontWeight:600}}>🔒 Tipping er låst</div>}
@@ -857,7 +863,7 @@ function SpecialView({categories,allTeams,mySpecial,onSave,showToast,locked,onNa
           <div key={cat.id} className={`sc ${mySpecial[cat.id]?"answered":""}`}>
             <div className="sc-top">
               <span className="sc-label">{cat.label}</span>
-              <span className="sc-pts">20p</span>
+              <span className="sc-pts">{cat.points}p</span>
             </div>
             <div className="sc-desc">{cat.desc}</div>
             <div className="sc-input-row">
@@ -888,8 +894,8 @@ function SpecialView({categories,allTeams,mySpecial,onSave,showToast,locked,onNa
         ))}
       </div>
       <div style={{textAlign:"center",marginTop:28}}>
-        <button className="btn-dash" style={{maxWidth:280,margin:"0 auto"}} onClick={()=>onNavigate&&onNavigate("submit")}>
-          Gå til innlevering →
+        <button className="btn-dash" style={{maxWidth:280,margin:"0 auto"}} onClick={()=>onNavigate&&onNavigate("home")}>
+          🏠 Gå til forsiden for innlevering →
         </button>
       </div>
     </div>
@@ -1248,7 +1254,7 @@ function App() {
       await api("/api/submit",{method:"POST"});
       setUser(u=>({...u,submittedAt:new Date().toISOString()}));
       setShowSubmit(false);
-      showToast("✅ Tipping sendt inn og låst! Sjekk e-posten din.","ok");
+      showToast("✅ Tipping sendt inn og låst!","ok");
     }catch(ex){showToast(ex.message,"bad");}finally{setSubmitLoading(false);}
   }
 
