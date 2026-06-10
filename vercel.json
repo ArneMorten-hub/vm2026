@@ -1,5 +1,4 @@
 {
   "framework": null,
-  "installCommand": "npm install",
-  "outputDirectory": "public"
+  "installCommand": "npm install"
 }
