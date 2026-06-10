@@ -501,13 +501,13 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,onN
   const totalStand = 48; // 12×4
   const tippedStand = Object.values(standings).reduce((s,g)=>s+Object.values(g).filter(Boolean).length,0);
   const tippedSpec = Object.keys(mySpecial).length;
-  const total = 72+48+14;
+  const total = 72+48+10;
   const done = tipped+tippedStand+tippedSpec;
   const pct = Math.round((done/total)*100);
   const isSubmitted = !!user.submittedAt;
   const past = isPastDeadline();
   return(
-    <div className="page" style={{paddingTop:0}}>
+    <div className="page">
       <div className="dash-hero">
         <div className="dash-ball">⚽</div>
         <h1 className="dash-title">VM-konkurranse 2026</h1>
@@ -522,10 +522,12 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,onN
         </div>
       )}
       {isSubmitted&&(
-        <div style={{background:"var(--green-light)",border:"1.5px solid rgba(5,150,105,.3)",borderRadius:"var(--r3)",padding:"20px 24px",marginBottom:24,textAlign:"center"}}>
-          <div style={{fontSize:28,marginBottom:8}}>✅</div>
-          <div style={{fontSize:16,fontWeight:800,color:"var(--green-dark)"}}>Tipping sendt inn og låst!</div>
-          <div style={{fontSize:13,color:"var(--muted)",marginTop:4}}>Du kan se tippingen din, men ikke endre den lenger.</div>
+        <div style={{display:"flex",alignItems:"center",gap:12,background:"var(--green-light)",border:"1.5px solid rgba(5,150,105,.3)",borderRadius:"var(--r2)",padding:"12px 18px",marginBottom:20}}>
+          <span style={{fontSize:20}}>✅</span>
+          <div>
+            <div style={{fontSize:14,fontWeight:800,color:"var(--green-dark)"}}>Tipping sendt inn og låst!</div>
+            <div style={{fontSize:12,color:"var(--muted)"}}>Du kan se tippingen din, men ikke endre den lenger.</div>
+          </div>
         </div>
       )}
       <div className="dash-grid">
@@ -553,8 +555,8 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,onN
           <div className="dash-card-sub">Toppscorer, mester, første mål og mer</div>
           <div className="dash-stat">
             <span style={{minWidth:110,fontSize:12,color:"var(--muted)"}}>Besvart</span>
-            <div className="dash-stat-bar"><div className="dash-stat-fill" style={{width:`${(tippedSpec/14)*100}%`}}/></div>
-            <span className="dash-stat-num" style={{color:tippedSpec===14?"var(--green)":"var(--muted)"}}>{tippedSpec}/14</span>
+            <div className="dash-stat-bar"><div className="dash-stat-fill" style={{width:`${(tippedSpec/10)*100}%`}}/></div>
+            <span className="dash-stat-num" style={{color:tippedSpec===10?"var(--green)":"var(--muted)"}}>{tippedSpec}/10</span>
           </div>
           <div style={{fontSize:12,color:"var(--muted)",marginTop:8}}>20 poeng per riktig svar</div>
           <button className="btn-dash" onClick={()=>onNav("special")}>{isSubmitted?"Se spesialtips →":"Fyll inn →"}</button>
@@ -579,7 +581,7 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,onN
       {!isSubmitted&&!past&&(
         <div style={{background:"var(--white)",border:"1.5px solid var(--border)",borderRadius:"var(--r3)",padding:"20px 24px",textAlign:"center",boxShadow:"var(--shadow-sm)"}}>
           <div style={{fontSize:15,fontWeight:700,marginBottom:6}}>Ferdig med tippingen?</div>
-          <div style={{fontSize:13,color:"var(--muted)",marginBottom:14}}>Send inn for å låse tippingen og motta e-postbekreftelse</div>
+          <div style={{fontSize:13,color:"var(--muted)",marginBottom:14}}>Send inn for å låse tippingen din</div>
           <button onClick={onSubmit} style={{padding:"12px 28px",background:"var(--green)",color:"white",borderRadius:"var(--r2)",fontSize:15,fontWeight:700,boxShadow:"0 4px 14px rgba(5,150,105,.3)",border:"none",cursor:"pointer",transition:"all .15s"}}>
             📬 Send inn tipping
           </button>
