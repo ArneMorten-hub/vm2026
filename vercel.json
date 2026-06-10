@@ -1,0 +1,9 @@
+{
+  "outputDirectory": "public",
+  "functions": {
+    "api/[...path].ts": {
+      "memory": 512,
+      "maxDuration": 30
+    }
+  }
+}
