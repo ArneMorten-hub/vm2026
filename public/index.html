@@ -426,12 +426,12 @@ function Countdown() {
 
 // ── Landing ──
 function LandingPage({onLogin}) {
-  const [name,setName]=useState("");const [email,setEmail]=useState("");
+  const [name,setName]=useState("");
   const [err,setErr]=useState("");const [loading,setLoading]=useState(false);
   async function submit(e){
     e.preventDefault();setErr("");setLoading(true);
     try{
-      const d = await api("/api/auth/login-or-register",{method:"POST",body:JSON.stringify({name:name.trim(),email:email.trim()})});
+      const d = await api("/api/auth/login-or-register",{method:"POST",body:JSON.stringify({name:name.trim()})});
       localStorage.setItem("token",d.token);onLogin(d.user);
     }catch(ex){setErr(ex.message);}finally{setLoading(false);}
   }
@@ -447,15 +447,12 @@ function LandingPage({onLogin}) {
           <div className="inp-field"><label className="inp-label">Navn</label>
             <input className="inp" type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="Ditt fulle navn" autoFocus/>
           </div>
-          <div className="inp-field"><label className="inp-label">E-postadresse</label>
-            <input className="inp" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="din@epost.no"/>
-          </div>
           {err&&<div className="err-msg">{err}</div>}
-          <button className="btn-primary" disabled={loading||!name.trim()||!email.trim()}>
+          <button className="btn-primary" disabled={loading||!name.trim()}>
             {loading?"Laster...":"Bli med →"}
           </button>
         </form>
-        <p className="landing-note">Allerede registrert? Skriv inn samme e-post for å logge inn</p>
+        <p className="landing-note">Allerede registrert? Skriv inn samme navn for å logge inn igjen</p>
       </div>
     </div>
   );
@@ -962,7 +959,7 @@ function UserModal({userId,onClose,categories,flags}) {
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal">
         <div className="modal-top">
-          <div className="modal-title">👤 {user?.name} <span style={{fontSize:13,color:"var(--muted)",fontWeight:400}}>{user?.email}</span></div>
+          <div className="modal-title">👤 {user?.name}</div>
           <button className="btn-close" onClick={onClose}>Lukk ✕</button>
         </div>
         {user?.submitted_at&&<div style={{fontSize:12,color:"var(--green)",fontWeight:700,marginBottom:12}}>✓ Sendt inn: {new Date(user.submitted_at).toLocaleString("no-NO")}</div>}
@@ -1177,7 +1174,6 @@ function AdminView({matches,categories,allTeams,flags,showToast,onRefresh}) {
               <div key={u.id} className={`user-card ${u.submitted_at?"submitted":""}`} onClick={()=>setSelUser(u.id)}>
                 <div className="user-card-icon">{u.is_admin?"👑":"👤"}</div>
                 <div className="user-card-name">{u.name}</div>
-                <div className="user-card-sub">{u.email}</div>
                 {u.submitted_at&&<div style={{fontSize:10,color:"var(--green)",fontWeight:700,marginTop:4}}>✓ Sendt inn</div>}
               </div>
             ))}

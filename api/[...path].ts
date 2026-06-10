@@ -31,19 +31,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // ── Auth ────────────────────────────────────────────────────────────────────
   if (path === "/api/auth/login-or-register" && method === "POST") {
-    const { name, email } = body as any;
+    const { name } = body as any;
     if (!name?.trim()) return err(res, "Navn kreves");
-    if (!email?.trim() || !email.includes("@")) return err(res, "Gyldig e-postadresse kreves");
     if (name.trim().length < 2) return err(res, "Navn må være minst 2 tegn");
 
-    let u = (await pool.query("SELECT * FROM users WHERE LOWER(email) = LOWER($1)", [email.trim()])).rows[0];
+    let u = (await pool.query("SELECT * FROM users WHERE LOWER(name) = LOWER($1)", [name.trim()])).rows[0];
 
     if (!u) {
       const cnt = (await pool.query("SELECT COUNT(*) as c FROM users")).rows[0].c;
       const isAdmin = parseInt(cnt) === 0 ? 1 : 0;
       const r = await pool.query(
         "INSERT INTO users (name, email, is_admin) VALUES ($1,$2,$3) RETURNING *",
-        [name.trim(), email.trim().toLowerCase(), isAdmin]
+        [name.trim(), "", isAdmin]
       );
       u = r.rows[0];
     }
