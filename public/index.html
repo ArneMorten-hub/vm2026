@@ -876,14 +876,12 @@ function SpecialView({categories,allTeams,mySpecial,onSave,showToast,locked,onNa
                   {allTeams.map(t=><option key={t} value={t}>{t}</option>)}
                 </select>
               ):(
-                <>
-                  <input className="inp" type={cat.type==="number"?"number":"text"}
-                    placeholder={cat.type==="number"?"Antall…":"Etternavn / navn…"}
-                    value={vals[cat.id]||""} disabled={locked}
-                    onChange={e=>setVals(p=>({...p,[cat.id]:e.target.value}))}
-                    onKeyDown={e=>e.key==="Enter"&&save(cat.id)}/>
-                  {!locked&&<button className="btn-save" onClick={()=>save(cat.id)}>Lagre</button>}
-                </>
+                <input className="inp" type={cat.type==="number"?"number":"text"}
+                  placeholder={cat.type==="number"?"Antall…":"Etternavn / navn…"}
+                  value={vals[cat.id]||""} disabled={locked}
+                  onChange={e=>setVals(p=>({...p,[cat.id]:e.target.value}))}
+                  onBlur={()=>save(cat.id)}
+                  onKeyDown={e=>e.key==="Enter"&&save(cat.id)}/>
               )}
             </div>
             {savedCats[cat.id]&&<div className="sc-saved">✓ Lagret!</div>}
