@@ -1,9 +1,6 @@
 {
   "outputDirectory": "public",
-  "functions": {
-    "api/[...path].ts": {
-      "memory": 512,
-      "maxDuration": 30
-    }
-  }
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/handler" }
+  ]
 }
