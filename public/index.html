@@ -470,14 +470,14 @@ function SubmitModal({onClose,onConfirm,predictions,standings,mySpecial,loading}
         <div style={{textAlign:"center",marginBottom:20}}>
           <div style={{fontSize:40,marginBottom:8}}>📬</div>
           <h2>Send inn tipping?</h2>
-          <p>Når du sender inn låses tippingen din og kan ikke endres. Du vil motta en e-postbekreftelse.</p>
+          <p>Når du sender inn låses tippingen din og kan ikke endres.</p>
         </div>
         <div className="submit-summary">
           <div className="submit-summary-row"><span className="label">Kamptips (gruppespill)</span><span className="val" style={{color:tipped<groupMatches?"var(--amber)":"var(--green)"}}>{tipped}/{groupMatches}</span></div>
           <div className="submit-summary-row"><span className="label">Tabellplasseringer</span><span className="val" style={{color:standingsCount<48?"var(--amber)":"var(--green)"}}>{standingsCount}/48</span></div>
-          <div className="submit-summary-row"><span className="label">Spesialtips</span><span className="val" style={{color:specialCount<14?"var(--amber)":"var(--green)"}}>{specialCount}/14</span></div>
+          <div className="submit-summary-row"><span className="label">Spesialtips</span><span className="val" style={{color:specialCount<10?"var(--amber)":"var(--green)"}}>{specialCount}/10</span></div>
         </div>
-        {(tipped<groupMatches||standingsCount<48||specialCount<14)&&(
+        {(tipped<groupMatches||standingsCount<48||specialCount<10)&&(
           <div style={{background:"var(--amber-light)",border:"1.5px solid rgba(217,119,6,.3)",borderRadius:"var(--r)",padding:"10px 14px",fontSize:13,color:"var(--amber)",marginBottom:16}}>
             ⚠️ Du har ikke fylt inn alt ennå. Du kan likevel sende inn det du har.
           </div>
