@@ -74,10 +74,10 @@ nav::-webkit-scrollbar{display:none}
 .page{max-width:980px;margin:0 auto;padding:28px 20px 80px;width:100%}
 
 /* ── Dashboard ── */
-.dash-hero{text-align:center;padding:16px 20px 14px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:white;margin:-28px -20px 20px;border-radius:0 0 var(--r4) var(--r4)}
-.dash-ball{font-size:24px;margin-bottom:4px}
-.dash-title{font-size:20px;font-weight:800;letter-spacing:-.5px;margin-bottom:2px}
-.dash-greeting{font-size:14px;opacity:.9}
+.dash-hero{text-align:center;padding:9px 20px 8px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:white;margin:-28px -20px 16px;border-radius:0 0 var(--r4) var(--r4)}
+.dash-ball{display:none}
+.dash-title{font-size:16px;font-weight:800;letter-spacing:-.3px;margin-bottom:1px}
+.dash-greeting{font-size:13px;opacity:.9}
 .deadline-banner{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r3);padding:20px 24px;margin-bottom:24px;text-align:center;box-shadow:var(--shadow)}
 .deadline-text{font-size:14px;color:var(--muted);margin-bottom:12px}
 .deadline-text strong{color:var(--text)}
@@ -136,8 +136,8 @@ nav::-webkit-scrollbar{display:none}
 .group-card:hover .gc-arrow{color:var(--blue);right:12px}
 
 /* ── Group detail ── */
-.gd-back{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;font-weight:700;background:var(--white);padding:8px 14px;border-radius:var(--r);border:1.5px solid var(--border);transition:all .15s;margin-bottom:18px}
-.gd-back:hover{color:var(--blue);border-color:var(--blue-mid)}
+.gd-back{display:inline-flex;align-items:center;gap:6px;color:var(--blue);font-size:14px;font-weight:700;background:var(--blue-light);padding:10px 18px;border-radius:var(--r2);border:1.5px solid var(--blue-mid);transition:all .15s;margin-bottom:18px}
+.gd-back:hover{background:var(--blue);color:white;border-color:var(--blue)}
 .gd-hero{background:linear-gradient(135deg,var(--blue),var(--blue2));color:white;border-radius:var(--r3);padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden}
 .gd-hero::after{content:'';position:absolute;right:-20px;top:-20px;width:120px;height:120px;background:rgba(255,255,255,.08);border-radius:50%}
 .gd-hero-top{display:flex;align-items:center;gap:14px;margin-bottom:12px}
@@ -208,11 +208,12 @@ nav::-webkit-scrollbar{display:none}
 .actual-label{font-size:11px;color:var(--muted);text-align:center;margin-bottom:4px}
 
 /* ── Footer nav in group detail ── */
-.gd-footer{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.95);border-top:1.5px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;z-index:50;backdrop-filter:blur(8px)}
+.gd-footer{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.97);border-top:2px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;z-index:50;backdrop-filter:blur(8px)}
 .gd-footer .center{font-size:12px;font-weight:700;color:var(--muted)}
-.btn-nav{display:flex;align-items:center;gap:5px;padding:9px 16px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--r2);color:var(--text2);font-size:13px;font-weight:700;transition:all .15s}
-.btn-nav:hover:not(:disabled){border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
-.btn-nav:disabled{opacity:.3;cursor:not-allowed}
+.btn-nav{display:flex;align-items:center;gap:6px;padding:11px 20px;background:var(--blue);border:none;border-radius:var(--r2);color:white;font-size:14px;font-weight:700;transition:all .15s;box-shadow:0 2px 8px rgba(37,99,235,.25)}
+.btn-nav:hover{background:var(--blue2);transform:translateY(-1px)}
+.btn-nav.green{background:var(--green);box-shadow:0 2px 8px rgba(5,150,105,.25)}
+.btn-nav.green:hover{background:var(--green-dark)}
 
 /* ── Knockout locked ── */
 .ko-locked{background:var(--white);border:2px dashed var(--border2);border-radius:var(--r3);padding:40px 24px;text-align:center;margin-top:20px}
@@ -621,9 +622,9 @@ function MatchCard({m,result,onPick,flags,locked}) {
       ):(
         <>
           <div className="match-teams">
-            <div className="team home"><span style={{fontWeight:700}}>{m.home_team}</span><span className="team-flag">{flags[m.home_team]||"🏳"}</span></div>
+            <div className="team home"><span style={{fontWeight:700}}>{m.home_team}</span></div>
             <div className="match-vs">–</div>
-            <div className="team away"><span className="team-flag">{flags[m.away_team]||"🏳"}</span><span style={{fontWeight:700}}>{m.away_team}</span></div>
+            <div className="team away"><span style={{fontWeight:700}}>{m.away_team}</span></div>
           </div>
           {finished?(
             <div>
@@ -756,7 +757,7 @@ function GroupDetailPage({group,groupsMeta,matches,predictions,standings,flags,o
       <div className="gd-footer">
         <button className="btn-nav" onClick={()=>prevGroup?onNav(prevGroup):onBack()}>← {prevGroup?`Gruppe ${prevGroup}`:"Oversikt"}</button>
         <div className="center">Gruppe {group} · {predCount+standCount}/10</div>
-        <button className="btn-nav" disabled={!nextGroup} onClick={()=>nextGroup&&onNav(nextGroup)}>{nextGroup?`Gruppe ${nextGroup} →`:"Ferdig ✓"}</button>
+        <button className={`btn-nav ${!nextGroup?"green":""}`} onClick={()=>nextGroup?onNav(nextGroup):onBack()}>{nextGroup?`Gruppe ${nextGroup} →`:"✓ Ferdig"}</button>
       </div>
     </div>
   );
