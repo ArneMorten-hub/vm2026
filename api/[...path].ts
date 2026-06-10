@@ -2,7 +2,6 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { getPool, calcPoints, type MatchRow } from "../src/db";
 import { generateToken, requireAuth, requireAdmin } from "../src/auth";
 import { specialCategories, allTeams, groups } from "../src/data";
-import { sendSubmissionEmail } from "../src/email";
 
 const DEADLINE = new Date("2026-06-11T19:00:00.000Z");
 const isPastDeadline = () => new Date() > DEADLINE;
@@ -184,10 +183,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (u.submitted_at) return err(res, "Du har allerede sendt inn tippingen din");
 
     await pool.query("UPDATE users SET submitted_at = NOW() WHERE id = $1", [u.id]);
-
-    sendSubmissionEmail(pool, u.id, u.name, u.email).catch(e => {
-      console.error("[E-post] Feil:", e.message);
-    });
 
     return ok(res, { ok: true, submittedAt: new Date().toISOString() });
   }
