@@ -74,10 +74,10 @@ nav::-webkit-scrollbar{display:none}
 .page{max-width:980px;margin:0 auto;padding:28px 20px 80px;width:100%}
 
 /* ── Dashboard ── */
-.dash-hero{text-align:center;padding:36px 20px 28px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:white;margin:-28px -20px 28px;border-radius:0 0 var(--r4) var(--r4)}
-.dash-ball{font-size:40px;margin-bottom:8px}
-.dash-title{font-size:28px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px}
-.dash-greeting{font-size:16px;opacity:.9}
+.dash-hero{text-align:center;padding:16px 20px 14px;background:linear-gradient(135deg,var(--blue),var(--blue2));color:white;margin:-28px -20px 20px;border-radius:0 0 var(--r4) var(--r4)}
+.dash-ball{font-size:24px;margin-bottom:4px}
+.dash-title{font-size:20px;font-weight:800;letter-spacing:-.5px;margin-bottom:2px}
+.dash-greeting{font-size:14px;opacity:.9}
 .deadline-banner{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r3);padding:20px 24px;margin-bottom:24px;text-align:center;box-shadow:var(--shadow)}
 .deadline-text{font-size:14px;color:var(--muted);margin-bottom:12px}
 .deadline-text strong{color:var(--text)}
@@ -826,7 +826,7 @@ function GroupsOverview({matches,predictions,standings,groupsMeta,onSelectGroup}
 }
 
 // ── Special ──
-function SpecialView({categories,allTeams,mySpecial,onSave,showToast,locked}) {
+function SpecialView({categories,allTeams,mySpecial,onSave,showToast,locked,onNavigate}) {
   const [vals,setVals]=useState({});
   const [savedCats,setSaved]=useState({});
   useEffect(()=>setVals({...mySpecial}),[mySpecial]);
@@ -842,10 +842,10 @@ function SpecialView({categories,allTeams,mySpecial,onSave,showToast,locked}) {
     <div className="page">
       <div className="special-hero">
         <h2>🌟 Spesialtips</h2>
-        <p>Svar på alle 14 kategorier – 20 poeng per riktig svar</p>
+        <p>Svar på alle {categories.length} kategorier – 20 poeng per riktig svar</p>
         <div className="special-progress">
-          <span className="sp-chip">Besvart: {answered}/14</span>
-          <span className="sp-chip">Maks poeng: 280p</span>
+          <span className="sp-chip">Besvart: {answered}/{categories.length}</span>
+          <span className="sp-chip">Maks poeng: {categories.length*20}p</span>
         </div>
       </div>
       {locked&&<div style={{background:"var(--amber-light)",border:"1.5px solid rgba(217,119,6,.3)",borderRadius:"var(--r2)",padding:"10px 16px",marginBottom:16,fontSize:13,color:"var(--amber)",fontWeight:600}}>🔒 Tipping er låst</div>}
@@ -883,6 +883,11 @@ function SpecialView({categories,allTeams,mySpecial,onSave,showToast,locked}) {
             {mySpecial[cat.id]&&!savedCats[cat.id]&&<div className="sc-cur">Nåværende: <strong>{mySpecial[cat.id]}</strong></div>}
           </div>
         ))}
+      </div>
+      <div style={{textAlign:"center",marginTop:28}}>
+        <button className="btn-dash" style={{maxWidth:280,margin:"0 auto"}} onClick={()=>onNavigate&&onNavigate("submit")}>
+          Gå til innlevering →
+        </button>
       </div>
     </div>
   );
@@ -1295,7 +1300,7 @@ function App() {
 
       {tab==="special"&&
         <SpecialView categories={categories} allTeams={allTeams} mySpecial={mySpecial}
-          onSave={handleSpecialSave} showToast={showToast} locked={isLocked}/>}
+          onSave={handleSpecialSave} showToast={showToast} locked={isLocked} onNavigate={setTab}/>}
 
       {tab==="leaderboard"&&<LeaderboardView currentUser={user}/>}
 

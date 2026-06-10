@@ -83,20 +83,16 @@ export const teamFlags: Record<string, string> = Object.values(groups).reduce((a
   return acc;
 }, {} as Record<string, string>);
 
-// EM 2024-inspired special categories (20 pts each)
+// Special categories (20 pts each)
 export const specialCategories = [
-  { id: "champion",          label: "🏆 Seierherrer",               desc: "Navn på laget som vinner VM",                         type: "team"   },
-  { id: "runner_up",         label: "🥈 Finalist",                  desc: "Navn på laget som taper finalen",                     type: "team"   },
-  { id: "top_scorer",        label: "⚽ Toppscorer",                 desc: "Etternavn på spiller som scorer flest mål",           type: "player" },
-  { id: "first_goal",        label: "🚀 Første målscorer",           desc: "Etternavn på spiller som scorer turneringens første mål", type: "player" },
-  { id: "most_goals_team",   label: "🔥 Mestscorende lag",           desc: "Navn på lag som scorer flest mål",                    type: "team"   },
-  { id: "fewest_goals_team", label: "🛡️ Minstscorende lag",          desc: "Navn på lag som scorer færrest mål",                  type: "team"   },
-  { id: "best_defense",      label: "🧱 Beste forsvar",              desc: "Navn på lag som slipper inn færrest mål",             type: "team"   },
-  { id: "total_goals",       label: "📊 Totalt antall mål",          desc: "Et tall for antall mål scoret i turneringen",         type: "number" },
-  { id: "red_card_player",   label: "🟥 Grisegutt",                  desc: "Etternavn på spiller som får rødt kort",              type: "player" },
-  { id: "red_card_team",     label: "🐷 Griselag",                   desc: "Navn på lag som får rødt kort",                       type: "team"   },
-  { id: "total_red_cards",   label: "🃏 Røde kort totalt",           desc: "Totalt antall røde kort i turneringen",               type: "number" },
-  { id: "penalty_shootouts", label: "🎯 Antall straffekonker",       desc: "Antall straffekonkurranser i turneringen",            type: "number" },
-  { id: "golden_glove",      label: "🧤 Golden Glove",               desc: "Etternavn på beste keeper",                          type: "player" },
-  { id: "best_young_player", label: "🌟 Beste unge spiller",         desc: "Etternavn på beste U21-spiller",                     type: "player" },
+  { id: "champion",          label: "🏆 Seierherrer",               desc: "Navn på laget som vinner VM",               type: "team"   },
+  { id: "runner_up",         label: "🥈 Finalist",                  desc: "Navn på laget som taper finalen",           type: "team"   },
+  { id: "top_scorer",        label: "⚽ Toppscorer",                 desc: "Navn på toppscoreren",                      type: "player" },
+  { id: "first_goal",        label: "🚀 Første målscorer",           desc: "Navn på spiller som scorer turneringens første mål", type: "player" },
+  { id: "most_goals_team",   label: "🔥 Mestscorende lag",           desc: "Navn på laget som scorer flest mål",        type: "team"   },
+  { id: "best_defense",      label: "🧱 Beste forsvar",              desc: "Navn på laget som slipper inn færrest mål", type: "team"   },
+  { id: "total_goals",       label: "📊 Totalt antall mål",          desc: "Antall mål scoret i turneringen",           type: "number" },
+  { id: "red_card_team",     label: "🐷 Griselag",                   desc: "Navn på laget som får rødt kort",           type: "team"   },
+  { id: "penalty_shootouts", label: "🎯 Antall straffekonker",       desc: "Antall straffekonkurranser i turneringen",  type: "number" },
+  { id: "golden_glove",      label: "🧤 Golden Glove",               desc: "Navn på beste keeper",                      type: "player" },
 ];
