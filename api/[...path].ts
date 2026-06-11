@@ -367,6 +367,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return ok(res, { ok: true });
   }
 
+  // ── Admin: lås opp bruker ─────────────────────────────────────────────────
+  const adminUnlockMatch = path.match(/^\/api\/admin\/user\/(\d+)\/unlock$/);
+  if (adminUnlockMatch && method === "POST") {
+    const admin = await requireAdmin(pool, req.headers as any);
+    if ("error" in admin) return err(res, admin.error, admin.status);
+    const uid = parseInt(adminUnlockMatch[1]);
+    await pool.query("UPDATE users SET submitted_at = NULL WHERE id = $1", [uid]);
+    return ok(res, { ok: true });
+  }
+
   // ── Excel eksport ──────────────────────────────────────────────────────────
   if (path === "/api/admin/export" && method === "GET") {
     const admin = await requireAdmin(pool, req.headers as any);

@@ -464,6 +464,12 @@ function SubmitModal({onClose,onConfirm,predictions,standings,mySpecial,loading}
   const tipped = Object.keys(predictions).length;
   const standingsCount = Object.values(standings).reduce((s,g)=>s+Object.values(g).filter(Boolean).length,0);
   const specialCount = Object.keys(mySpecial).length;
+  const missing = [];
+  if(tipped<groupMatches) missing.push(`${groupMatches-tipped} kamptips mangler`);
+  if(standingsCount<48) missing.push(`${48-standingsCount} tabellplasseringer mangler`);
+  if(specialCount<10) missing.push(`${10-specialCount} spesialtips mangler`);
+  const hasMissing = missing.length>0;
+  const [confirmed,setConfirmed]=useState(false);
   return(
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal submit-modal" style={{marginTop:40}}>
@@ -477,14 +483,19 @@ function SubmitModal({onClose,onConfirm,predictions,standings,mySpecial,loading}
           <div className="submit-summary-row"><span className="label">Tabellplasseringer</span><span className="val" style={{color:standingsCount<48?"var(--amber)":"var(--green)"}}>{standingsCount}/48</span></div>
           <div className="submit-summary-row"><span className="label">Spesialtips</span><span className="val" style={{color:specialCount<10?"var(--amber)":"var(--green)"}}>{specialCount}/10</span></div>
         </div>
-        {(tipped<groupMatches||standingsCount<48||specialCount<10)&&(
-          <div style={{background:"var(--amber-light)",border:"1.5px solid rgba(217,119,6,.3)",borderRadius:"var(--r)",padding:"10px 14px",fontSize:13,color:"var(--amber)",marginBottom:16}}>
-            ⚠️ Du har ikke fylt inn alt ennå. Du kan likevel sende inn det du har.
+        {hasMissing&&(
+          <div style={{background:"var(--amber-light)",border:"1.5px solid rgba(217,119,6,.4)",borderRadius:"var(--r2)",padding:"12px 14px",marginBottom:16}}>
+            <div style={{fontSize:13,fontWeight:700,color:"var(--amber)",marginBottom:8}}>⚠️ Du har ikke fylt inn alt:</div>
+            {missing.map(m=><div key={m} style={{fontSize:13,color:"var(--amber)",paddingLeft:8}}>• {m}</div>)}
+            <label style={{display:"flex",alignItems:"center",gap:8,marginTop:12,cursor:"pointer",fontSize:13,fontWeight:600,color:"var(--text2)"}}>
+              <input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)} style={{width:16,height:16,cursor:"pointer"}}/>
+              Jeg forstår at jeg ikke har fylt inn alt
+            </label>
           </div>
         )}
         <div className="submit-actions">
           <button className="btn-cancel" onClick={onClose} disabled={loading}>Avbryt</button>
-          <button className="btn-confirm" onClick={onConfirm} disabled={loading}>{loading?"Sender...":"✓ Send inn og lås"}</button>
+          <button className="btn-confirm" onClick={onConfirm} disabled={loading||(hasMissing&&!confirmed)}>{loading?"Sender...":"✓ Send inn og lås"}</button>
         </div>
       </div>
     </div>
@@ -947,6 +958,7 @@ function LeaderboardView({currentUser}) {
 // ── Admin: User Modal ──
 function UserModal({userId,onClose,categories,flags}) {
   const [data,setData]=useState(null);const [tab,setTab]=useState("matches");
+  const [unlocking,setUnlocking]=useState(false);
   useEffect(()=>{api(`/api/admin/user/${userId}/predictions`).then(setData);},[userId]);
   if(!data) return <div className="overlay"><div className="modal"><div className="loader"><div className="spin"/></div></div></div>;
   const {user,predictions,specials,standings}=data;
@@ -954,6 +966,15 @@ function UserModal({userId,onClose,categories,flags}) {
   const byGroup={};for(const r of standings){if(!byGroup[r.group_name])byGroup[r.group_name]=[];byGroup[r.group_name].push(r);}
   const resLabel = r => r==="H"?"🏠 H":r==="U"?"🤝 U":r==="B"?"✈️ B":r||"–";
   const actualRes = (ah,aa) => ah===null?"–":ah>aa?"🏠 H":ah<aa?"✈️ B":"🤝 U";
+  async function unlock(){
+    if(!window.confirm(`Er du sikker på at du vil låse opp tippingen til ${user.name}?`))return;
+    setUnlocking(true);
+    try{
+      await api(`/api/admin/user/${userId}/unlock`,{method:"POST"});
+      setData(d=>({...d,user:{...d.user,submitted_at:null}}));
+    }catch(ex){alert(ex.message);}
+    setUnlocking(false);
+  }
   return(
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal">
@@ -961,7 +982,16 @@ function UserModal({userId,onClose,categories,flags}) {
           <div className="modal-title">👤 {user?.name}</div>
           <button className="btn-close" onClick={onClose}>Lukk ✕</button>
         </div>
-        {user?.submitted_at&&<div style={{fontSize:12,color:"var(--green)",fontWeight:700,marginBottom:12}}>✓ Sendt inn: {new Date(user.submitted_at).toLocaleString("no-NO")}</div>}
+        {user?.submitted_at?(
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+            <div style={{fontSize:12,color:"var(--green)",fontWeight:700}}>✓ Sendt inn: {new Date(user.submitted_at).toLocaleString("no-NO")}</div>
+            <button onClick={unlock} disabled={unlocking} style={{fontSize:12,padding:"4px 10px",background:"var(--amber-light)",border:"1.5px solid rgba(217,119,6,.4)",borderRadius:"var(--r)",color:"var(--amber)",fontWeight:700,cursor:"pointer"}}>
+              {unlocking?"Låser opp…":"🔓 Lås opp"}
+            </button>
+          </div>
+        ):(
+          <div style={{fontSize:12,color:"var(--muted)",marginBottom:12}}>Ikke sendt inn ennå</div>
+        )}
         <div className="modal-tabs">
           {[["matches","⚽ Kamper"],["standings","📋 Tabell"],["special","🌟 Spesialtips"]].map(([k,l])=>(
             <button key={k} className={`mtab ${tab===k?"on":""}`} onClick={()=>setTab(k)}>{l}</button>
