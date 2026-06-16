@@ -460,6 +460,7 @@ function LandingPage({onLogin}) {
 
 // ── Submit Modal ──
 function SubmitModal({onClose,onConfirm,predictions,standings,mySpecial,loading}) {
+  const [confirmed,setConfirmed]=useState(false);
   const groupMatches = 72;
   const tipped = Object.keys(predictions).length;
   const standingsCount = Object.values(standings).reduce((s,g)=>s+Object.values(g).filter(Boolean).length,0);
@@ -469,7 +470,6 @@ function SubmitModal({onClose,onConfirm,predictions,standings,mySpecial,loading}
   if(standingsCount<48) missing.push(`${48-standingsCount} tabellplasseringer mangler`);
   if(specialCount<10) missing.push(`${10-specialCount} spesialtips mangler`);
   const hasMissing = missing.length>0;
-  const [confirmed,setConfirmed]=useState(false);
   return(
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal submit-modal" style={{marginTop:40}}>
@@ -863,7 +863,7 @@ function SpecialView({categories,allTeams,mySpecial,onSave,showToast,locked,onNa
         <p>Svar på alle {categories.length} kategorier – 20p for vinner, 10p for resten</p>
         <div className="special-progress">
           <span className="sp-chip">Besvart: {answered}/{categories.length}</span>
-          <span className="sp-chip">Maks poeng: {categories.reduce((s,c)=>s+c.points,0)}p</span>
+          <span className="sp-chip">Maks poeng: {categories.length*10+10}p</span>
         </div>
       </div>
       {locked&&<div style={{background:"var(--amber-light)",border:"1.5px solid rgba(217,119,6,.3)",borderRadius:"var(--r2)",padding:"10px 16px",marginBottom:16,fontSize:13,color:"var(--amber)",fontWeight:600}}>🔒 Tipping er låst</div>}
@@ -872,7 +872,7 @@ function SpecialView({categories,allTeams,mySpecial,onSave,showToast,locked,onNa
           <div key={cat.id} className={`sc ${mySpecial[cat.id]?"answered":""}`}>
             <div className="sc-top">
               <span className="sc-label">{cat.label}</span>
-              <span className="sc-pts">{cat.points}p</span>
+              <span className="sc-pts">{cat.id==="champion"?20:10}p</span>
             </div>
             <div className="sc-desc">{cat.desc}</div>
             <div className="sc-input-row">
