@@ -361,6 +361,12 @@ nav::-webkit-scrollbar{display:none}
 .dm-score{font-size:18px;font-weight:900;color:var(--text);text-align:center;padding:0 4px}
 .dm-tip{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .dm-tip-pill{font-size:12px;font-weight:700;border-radius:20px;padding:3px 10px;display:inline-block}
+.dm-tip-row{display:flex;gap:5px;margin-top:8px}
+.dm-tip-btn{flex:1;text-align:center;font-size:12px;font-weight:600;border-radius:8px;padding:6px 4px;border:1.5px solid var(--border);color:var(--dim);background:var(--bg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dm-tip-btn.chosen{border-color:var(--blue);color:var(--blue);background:rgba(59,130,246,.1);font-weight:800}
+.dm-tip-btn.correct{border-color:var(--green)!important;color:var(--green)!important;background:rgba(5,150,105,.1)!important;font-weight:800!important}
+.dm-tip-btn.wrong{border-color:var(--red)!important;color:var(--red)!important;background:rgba(220,38,38,.08)!important;font-weight:800!important}
+.dm-tip-btn.fasit{border-color:rgba(5,150,105,.3);color:var(--green-dark,#047857);background:rgba(5,150,105,.04)}
 @media(max-width:640px){
   .lb-hdr,.lb-row{grid-template-columns:44px 1fr 80px}
   .lb-row>:last-child,.lb-hdr>:last-child{display:none}
@@ -611,14 +617,19 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
                       : <span className="dm-vs">–</span>}
                     <span className="dm-team away">{m.away_team}</span>
                   </div>
-                  <div className="dm-tip">
-                    {pred
-                      ? <span className="dm-tip-pill" style={{background:finished?(correct?"rgba(5,150,105,.12)":"rgba(220,38,38,.1)"):"rgba(59,130,246,.1)",color:finished?(correct?"var(--green)":"var(--red)"):"var(--blue)",border:`1.5px solid ${finished?(correct?"rgba(5,150,105,.3)":"rgba(220,38,38,.3)"):"rgba(59,130,246,.3)"}`}}>
-                          {finished?(correct?"✓ ":"✗ "):""}{resLabel(pred.result)}
+                  <div className="dm-tip-row">
+                    {["H","U","B"].map(r=>{
+                      const lbl=r==="H"?"Hjem":r==="U"?"Uavgjort":"Borte";
+                      const chosen=pred?.result===r;
+                      const isCorrect=finished&&actualR===r&&chosen;
+                      const isWrong=finished&&actualR!==r&&chosen;
+                      const isFasit=finished&&actualR===r&&!chosen;
+                      return(
+                        <span key={r} className={`dm-tip-btn${chosen?" chosen":""}${isCorrect?" correct":""}${isWrong?" wrong":""}${isFasit?" fasit":""}`}>
+                          {lbl}{isCorrect?" ✓":""}{isWrong?" ✗":""}
                         </span>
-                      : <span className="dm-tip-pill" style={{background:"var(--bg)",color:"var(--dim)",border:"1.5px solid var(--border)"}}>Ikke tippet</span>
-                    }
-                    {finished&&actualR&&<span style={{fontSize:12,color:"var(--muted)",marginLeft:6}}>Fasit: {resLabel(actualR)}</span>}
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -1165,6 +1176,7 @@ function AdminView({matches,categories,allTeams,flags,showToast,onRefresh}) {
     if(e.h!==""&&e.a!==""){body.homeScore=+e.h;body.awayScore=+e.a;body.status="finished";}
     if(e.ht)body.homeTeam=e.ht;if(e.at)body.awayTeam=e.at;
     if(e.time)body.matchTime=e.time;
+    if(e.date)body.matchDate=e.date;
     if(!Object.keys(body).length)return;
     try{await api(`/api/admin/match/${id}`,{method:"POST",body:JSON.stringify(body)});showToast("✓ Kamp oppdatert");onRefresh();}
     catch(ex){showToast(ex.message,"bad");}
@@ -1209,7 +1221,7 @@ function AdminView({matches,categories,allTeams,flags,showToast,onRefresh}) {
             </>}
           </div>
           {filtered.map(m=>{
-            const e=edits[m.id]||{h:m.home_score??"",a:m.away_score??"",ht:"",at:"",time:m.match_time||""};
+            const e=edits[m.id]||{h:m.home_score??"",a:m.away_score??"",ht:"",at:"",time:m.match_time||"",date:m.match_date||""};
             const isTbd=m.home_team==="TBD";
             return(
               <div key={m.id} className="adm-match">
@@ -1220,6 +1232,7 @@ function AdminView({matches,categories,allTeams,flags,showToast,onRefresh}) {
                   <input className="inp adm-si" style={{width:120,height:34,fontSize:12}} placeholder="Bortelag" value={e.at||""} onChange={ev=>setEdits(p=>({...p,[m.id]:{...e,at:ev.target.value}}))}/>
                 </>}
                 <input className="inp adm-si adm-time" placeholder="21:00" value={e.time||""} onChange={ev=>setEdits(p=>({...p,[m.id]:{...e,time:ev.target.value}}))}/>
+                <input type="date" className="inp adm-si" style={{width:130,height:34,fontSize:12}} value={e.date||""} onChange={ev=>setEdits(p=>({...p,[m.id]:{...e,date:ev.target.value}}))}/>
                 <input className="adm-si" type="number" min="0" max="20" placeholder="H" value={e.h} onChange={ev=>setEdits(p=>({...p,[m.id]:{...e,h:ev.target.value}}))}/>
                 <span style={{color:"var(--dim)",fontWeight:800}}>–</span>
                 <input className="adm-si" type="number" min="0" max="20" placeholder="B" value={e.a} onChange={ev=>setEdits(p=>({...p,[m.id]:{...e,a:ev.target.value}}))}/>
