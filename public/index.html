@@ -405,12 +405,8 @@ const fmt = d => {
   if(!d) return "";
   return new Date(d+(d.length===10?"T12:00:00":"")).toLocaleDateString("no-NO",{day:"numeric",month:"short"});
 };
-// Konverterer UTC-tid lagret i databasen til norsk tid (CEST = UTC+2)
-const toNorskTid = (dateStr, timeStr) => {
-  if(!dateStr||!timeStr) return timeStr||"";
-  const dt = new Date(`${dateStr}T${timeStr}:00Z`);
-  return dt.toLocaleTimeString("no-NO",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/Oslo"});
-};
+// Tider i databasen er norsk tid (CEST) – vises direkte
+const toNorskTid = (dateStr, timeStr) => timeStr||"";
 const rankIcon = i => ["🥇","🥈","🥉"][i] ?? `${i+1}.`;
 const isPastDeadline = () => new Date() > DEADLINE;
 
@@ -537,16 +533,25 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
   const isSubmitted = !!user.submittedAt;
   const past = isPastDeadline();
 
-  // Beregn neste/nylige kamper
+  // Beregn dagens/neste kamper
   const sortedGroup = [...groupMatches].sort((a,b)=>{
     const ta=new Date(a.match_date+"T"+(a.match_time||"12:00"));
     const tb=new Date(b.match_date+"T"+(b.match_time||"12:00"));
     return ta-tb;
   });
-  const nextIdx = sortedGroup.findIndex(m=>m.status!=="finished");
-  const matchSlice = nextIdx>=0
-    ? sortedGroup.slice(Math.max(0,nextIdx-1), nextIdx+2)
-    : sortedGroup.slice(-3);
+  // Dagens dato i norsk tid
+  const nowNo = new Date(new Date().toLocaleString("en-US",{timeZone:"Europe/Oslo"}));
+  const todayStr = [nowNo.getFullYear(),String(nowNo.getMonth()+1).padStart(2,"0"),String(nowNo.getDate()).padStart(2,"0")].join("-");
+  const todayMatches = sortedGroup.filter(m=>m.match_date===todayStr);
+  const nextFuture = sortedGroup.find(m=>m.status!=="finished"&&m.match_date>todayStr);
+  const nextMatch = sortedGroup.find(m=>m.status!=="finished");
+  const lastFinished = sortedGroup.filter(m=>m.status==="finished").slice(-1);
+  // Vis dagens kamper + 1 siste avsluttet; ellers neste dags kamper
+  const matchSlice = todayMatches.length>0
+    ? [...lastFinished, ...todayMatches]
+    : nextFuture
+      ? [...lastFinished, ...sortedGroup.filter(m=>m.match_date===nextFuture.match_date)]
+      : sortedGroup.slice(-3);
 
   const resLabel = r => r==="H"?"Hjemme":r==="U"?"Uavgjort":"Borte";
   const resColor = r => r==="H"?"var(--green)":r==="U"?"var(--amber)":"var(--blue)";
@@ -589,7 +594,7 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
               const finished = m.status==="finished";
               const actualR = finished&&m.home_score!==null ? (m.home_score>m.away_score?"H":m.home_score<m.away_score?"B":"U") : null;
               const correct = pred&&actualR&&pred.result===actualR;
-              const isNext = nextIdx>=0&&m.id===sortedGroup[nextIdx]?.id;
+              const isNext = m.id===nextMatch?.id;
               return(
                 <div key={m.id} className="dm-card" onClick={()=>onNavGroup&&onNavGroup(m.group_name)}
                   style={{cursor:onNavGroup?"pointer":"default",borderLeft:isNext?"3px solid var(--blue)":"3px solid transparent"}}>
