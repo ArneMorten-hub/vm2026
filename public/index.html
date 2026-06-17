@@ -348,18 +348,18 @@ nav::-webkit-scrollbar{display:none}
 .btn-link:hover{text-decoration:underline}
 .dm-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r2);padding:12px 14px;transition:box-shadow .15s}
 .dm-card:hover{box-shadow:var(--shadow)}
-.dm-meta{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
-.dm-badge{font-size:11px;font-weight:700;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:2px 8px;color:var(--muted)}
+.dm-meta{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.dm-badge{font-size:11px;font-weight:700;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:2px 8px;color:var(--muted);white-space:nowrap}
 .dm-badge.next{background:rgba(59,130,246,.1);color:var(--blue);border-color:rgba(59,130,246,.3)}
 .dm-badge.done{background:rgba(5,150,105,.1);color:var(--green);border-color:rgba(5,150,105,.3)}
-.dm-time{font-size:12px;color:var(--dim);margin-left:auto}
-.dm-teams{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.dm-team{font-size:14px;font-weight:700;color:var(--text);flex:1}
+.dm-time{font-size:12px;color:var(--dim);margin-left:auto;white-space:nowrap}
+.dm-teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:8px}
+.dm-team{font-size:13px;font-weight:700;color:var(--text);line-height:1.3}
 .dm-team.home{text-align:right}
 .dm-team.away{text-align:left}
-.dm-vs{font-size:12px;color:var(--dim);font-weight:600;flex-shrink:0;min-width:24px;text-align:center}
-.dm-score{font-size:16px;font-weight:900;color:var(--text);flex-shrink:0;min-width:40px;text-align:center}
-.dm-tip{display:flex;align-items:center;gap:6px}
+.dm-vs{font-size:13px;color:var(--dim);font-weight:700;text-align:center;padding:0 2px}
+.dm-score{font-size:18px;font-weight:900;color:var(--text);text-align:center;padding:0 4px}
+.dm-tip{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .dm-tip-pill{font-size:12px;font-weight:700;border-radius:20px;padding:3px 10px;display:inline-block}
 @media(max-width:640px){
   .lb-hdr,.lb-row{grid-template-columns:44px 1fr 80px}
@@ -583,23 +583,22 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
               const finished = m.status==="finished";
               const actualR = finished&&m.home_score!==null ? (m.home_score>m.away_score?"H":m.home_score<m.away_score?"B":"U") : null;
               const correct = pred&&actualR&&pred.result===actualR;
-              const wrong = pred&&actualR&&pred.result!==actualR;
               const isNext = nextIdx>=0&&m.id===sortedGroup[nextIdx]?.id;
               return(
                 <div key={m.id} className="dm-card" onClick={()=>onNavGroup&&onNavGroup(m.group_name)}
                   style={{cursor:onNavGroup?"pointer":"default",borderLeft:isNext?"3px solid var(--blue)":"3px solid transparent"}}>
                   <div className="dm-meta">
                     <span className="dm-badge">{`Gruppe ${m.group_name} · Runde ${m.matchday}`}</span>
-                    <span className="dm-time">{fmt(m.match_date)}{m.match_time&&<> · {m.match_time}</>}</span>
                     {isNext&&<span className="dm-badge next">Neste kamp</span>}
                     {finished&&<span className="dm-badge done">Ferdig</span>}
+                    <span className="dm-time">{fmt(m.match_date)}{m.match_time&&<> · kl. {m.match_time}</>}</span>
                   </div>
                   <div className="dm-teams">
-                    <span className="dm-team home">{(flags&&flags[m.home_team])||""} {m.home_team}</span>
+                    <span className="dm-team home">{m.home_team}</span>
                     {finished
                       ? <span className="dm-score">{m.home_score}–{m.away_score}</span>
-                      : <span className="dm-vs">vs</span>}
-                    <span className="dm-team away">{m.away_team} {(flags&&flags[m.away_team])||""}</span>
+                      : <span className="dm-vs">–</span>}
+                    <span className="dm-team away">{m.away_team}</span>
                   </div>
                   <div className="dm-tip">
                     {pred
@@ -618,13 +617,28 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
       )}
 
       <div className="dash-grid">
-        {/* Box 1: Gruppespill */}
+        {/* Box 1: Leaderboard – flyttet øverst */}
+        <div className="dash-card dash-card-lb">
+          <div className="dash-card-icon">📊</div>
+          <div className="dash-card-title">Hvem leder?</div>
+          <div className="dash-card-sub">Oppdateres etter hvert som resultater registreres</div>
+          {leaderboard.length===0&&<div style={{fontSize:13,color:"var(--dim)",textAlign:"center",padding:"10px 0"}}>Ingen poeng ennå</div>}
+          {leaderboard.slice(0,5).map((u,i)=>(
+            <div key={u.id} className="lb-mini-row" style={{background:u.id===user.id?"rgba(59,130,246,.06)":"",borderRadius:6,margin:"0 -4px",padding:"0 4px"}}>
+              <span className="lb-mini-rank">{rankIcon(i)}</span>
+              <span className="lb-mini-name" style={{color:u.id===user.id?"var(--blue)":"",fontWeight:u.id===user.id?800:600}}>{u.name}{u.id===user.id?" 👈":""}</span>
+              <span className="lb-mini-pts" style={{color:u.id===user.id?"var(--blue)":""}}>{u.totalPoints}p</span>
+            </div>
+          ))}
+          <button className="btn-dash outline" style={{marginTop:10}} onClick={()=>onNav("leaderboard")}>Se full ledertavle →</button>
+        </div>
+        {/* Box 2: Gruppespill */}
         {(()=>{const done1=tipped===72&&tippedStand===48;return(
         <div className="dash-card" style={done1?{borderColor:"rgba(5,150,105,.5)",boxShadow:"0 0 0 1px rgba(5,150,105,.2),var(--shadow)"}:{}}>
           {done1&&<div style={{position:"absolute",top:12,right:12,width:22,height:22,background:"var(--green)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:12,fontWeight:900}}>✓</div>}
           <div className="dash-card-icon">🏟️</div>
-          <div className="dash-card-title">Bli med i konkurransen</div>
-          <div className="dash-card-sub">Tipp resultat i gruppespill</div>
+          <div className="dash-card-title">Gruppespill</div>
+          <div className="dash-card-sub">Dine kamptips og tabellplasseringer</div>
           <div className="dash-stat" style={{marginBottom:4}}>
             <span style={{minWidth:110,fontSize:12,color:"var(--muted)"}}>Kamptips</span>
             <div className="dash-stat-bar"><div className="dash-stat-fill" style={{width:`${(tipped/72)*100}%`}}/></div>
@@ -635,10 +649,10 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
             <div className="dash-stat-bar"><div className="dash-stat-fill green" style={{width:`${(tippedStand/totalStand)*100}%`}}/></div>
             <span className="dash-stat-num" style={{color:tippedStand===48?"var(--green)":"var(--muted)"}}>{tippedStand}/48</span>
           </div>
-          <button className={`btn-dash${done1?" green":""}`} onClick={()=>onNav("groups")}>{isSubmitted?"Se gruppetips →":done1?"✓ Gruppetips ferdig":"Start tipping →"}</button>
+          <button className={`btn-dash${done1?" green":""}`} onClick={()=>onNav("groups")}>{isSubmitted?"Se gruppetips →":done1?"✓ Ferdig":"Start tipping →"}</button>
         </div>
         )})()}
-        {/* Box 2: Spesialtips */}
+        {/* Box 3: Spesialtips */}
         {(()=>{const done2=tippedSpec===10;return(
         <div className="dash-card" style={done2?{borderColor:"rgba(5,150,105,.5)",boxShadow:"0 0 0 1px rgba(5,150,105,.2),var(--shadow)"}:{}}>
           {done2&&<div style={{position:"absolute",top:12,right:12,width:22,height:22,background:"var(--green)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:12,fontWeight:900}}>✓</div>}
@@ -651,24 +665,9 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
             <span className="dash-stat-num" style={{color:done2?"var(--green)":"var(--muted)"}}>{tippedSpec}/10</span>
           </div>
           <div style={{fontSize:12,color:"var(--muted)",marginTop:8}}>10–20 poeng per riktig svar</div>
-          <button className={`btn-dash${done2?" green":""}`} onClick={()=>onNav("special")}>{isSubmitted?"Se spesialtips →":done2?"✓ Spesialtips ferdig":"Fyll inn →"}</button>
+          <button className={`btn-dash${done2?" green":""}`} onClick={()=>onNav("special")}>{isSubmitted?"Se spesialtips →":done2?"✓ Ferdig":"Fyll inn →"}</button>
         </div>
         )})()}
-        {/* Box 3: Leaderboard */}
-        <div className="dash-card">
-          <div className="dash-card-icon">📊</div>
-          <div className="dash-card-title">Hvem leder?</div>
-          <div className="dash-card-sub">Oppdateres etter hvert som resultater registreres</div>
-          {leaderboard.length===0&&<div style={{fontSize:13,color:"var(--dim)",textAlign:"center",padding:"10px 0"}}>Ingen poeng ennå</div>}
-          {leaderboard.slice(0,4).map((u,i)=>(
-            <div key={u.id} className="lb-mini-row">
-              <span className="lb-mini-rank">{rankIcon(i)}</span>
-              <span className="lb-mini-name" style={{color:u.id===user.id?"var(--blue)":""}}>{u.name}{u.id===user.id?" (deg)":""}</span>
-              <span className="lb-mini-pts">{u.totalPoints}p</span>
-            </div>
-          ))}
-          <button className="btn-dash outline" style={{marginTop:10}} onClick={()=>onNav("leaderboard")}>Se alle →</button>
-        </div>
       </div>
       {/* Send inn-knapp */}
       {!isSubmitted&&!past&&(
