@@ -107,6 +107,7 @@ nav::-webkit-scrollbar{display:none}
 .btn-dash.outline:hover{background:var(--blue-light)}
 .lb-mini-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
 .lb-mini-row:last-child{border-bottom:none}
+.lb-top-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r2);padding:12px 16px;margin-bottom:24px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:2px}
 .lb-mini-rank{font-size:15px;min-width:24px}
 .lb-mini-name{flex:1;font-size:13px;font-weight:600}
 .lb-mini-pts{font-size:13px;font-weight:700;color:var(--blue)}
@@ -561,6 +562,7 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
 
   const resLabel = r => r==="H"?"Hjemme":r==="U"?"Uavgjort":"Borte";
   const resColor = r => r==="H"?"var(--green)":r==="U"?"var(--amber)":"var(--blue)";
+  const sectionTitle = todayMatches.length>0 ? "⚽ Dagens kamper" : "⚽ Neste kamper";
 
   return(
     <div className="page">
@@ -569,14 +571,6 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
         <h1 className="dash-title">VM-konkurranse 2026</h1>
         <p className="dash-greeting">Hei, {user.name}! 👋</p>
       </div>
-      {!isSubmitted&&(
-        <div className="deadline-banner">
-          <p className="deadline-text">
-            ⏰ Fristen for å legge inn tips for gruppespill, tabellplasseringer og spesialtips er <strong>11. juni kl. 21:00</strong>
-          </p>
-          <Countdown/>
-        </div>
-      )}
       {isSubmitted&&(
         <div style={{display:"flex",alignItems:"center",gap:12,background:"var(--green-light)",border:"1.5px solid rgba(5,150,105,.3)",borderRadius:"var(--r2)",padding:"12px 18px",marginBottom:20}}>
           <span style={{fontSize:20}}>✅</span>
@@ -587,11 +581,29 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
         </div>
       )}
 
+      {/* Ledertavle — fremhevet øverst */}
+      <div className="section-header" style={{marginBottom:10}}>
+        <span className="section-title">🏆 Hvem leder?</span>
+        <button className="btn-link" onClick={()=>onNav("leaderboard")}>Se full ledertavle →</button>
+      </div>
+      <div className="lb-top-card">
+        {leaderboard.length===0
+          ? <div style={{fontSize:13,color:"var(--dim)",padding:"6px 0"}}>Ingen poeng ennå — starter etter første kamp</div>
+          : leaderboard.slice(0,5).map((u,i)=>(
+              <div key={u.id} className="lb-mini-row" style={{background:u.id===user.id?"rgba(59,130,246,.06)":"",borderRadius:6,margin:"0 -4px",padding:"4px 4px"}}>
+                <span className="lb-mini-rank">{rankIcon(i)}</span>
+                <span className="lb-mini-name" style={{color:u.id===user.id?"var(--blue)":"",fontWeight:u.id===user.id?800:600}}>{u.name}{u.id===user.id?" 👈":""}</span>
+                <span className="lb-mini-pts" style={{color:u.id===user.id?"var(--blue)":""}}>{u.totalPoints}p</span>
+              </div>
+            ))
+        }
+      </div>
+
       {/* Kommende og nylige kamper */}
       {matchSlice.length>0&&(
         <div style={{marginBottom:24}}>
           <div className="section-header" style={{marginBottom:10}}>
-            <span className="section-title">⚽ Kampprogram</span>
+            <span className="section-title">{sectionTitle}</span>
             <button className="btn-link" onClick={()=>onNav("groups")}>Se alle kamper →</button>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -620,7 +632,7 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
                   <div className="dm-tip-line">
                     {pred ? (
                       <>
-                        <span className="dm-tip-label">Din tippe:</span>
+                        <span className="dm-tip-label">Du tippet:</span>
                         <span className={`dm-tip-val${finished?(correct?" t-ok":" t-bad"):""}`}>
                           {resLabel(pred.result)}{finished?(correct?" ✓":" ✗"):""}
                         </span>
@@ -640,28 +652,13 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
       )}
 
       <div className="dash-grid">
-        {/* Box 1: Leaderboard – flyttet øverst */}
-        <div className="dash-card dash-card-lb">
-          <div className="dash-card-icon">📊</div>
-          <div className="dash-card-title">Hvem leder?</div>
-          <div className="dash-card-sub">Oppdateres etter hvert som resultater registreres</div>
-          {leaderboard.length===0&&<div style={{fontSize:13,color:"var(--dim)",textAlign:"center",padding:"10px 0"}}>Ingen poeng ennå</div>}
-          {leaderboard.slice(0,5).map((u,i)=>(
-            <div key={u.id} className="lb-mini-row" style={{background:u.id===user.id?"rgba(59,130,246,.06)":"",borderRadius:6,margin:"0 -4px",padding:"0 4px"}}>
-              <span className="lb-mini-rank">{rankIcon(i)}</span>
-              <span className="lb-mini-name" style={{color:u.id===user.id?"var(--blue)":"",fontWeight:u.id===user.id?800:600}}>{u.name}{u.id===user.id?" 👈":""}</span>
-              <span className="lb-mini-pts" style={{color:u.id===user.id?"var(--blue)":""}}>{u.totalPoints}p</span>
-            </div>
-          ))}
-          <button className="btn-dash outline" style={{marginTop:10}} onClick={()=>onNav("leaderboard")}>Se full ledertavle →</button>
-        </div>
-        {/* Box 2: Gruppespill */}
+        {/* Gruppespill */}
         {(()=>{const done1=tipped===72&&tippedStand===48;return(
         <div className="dash-card" style={done1?{borderColor:"rgba(5,150,105,.5)",boxShadow:"0 0 0 1px rgba(5,150,105,.2),var(--shadow)"}:{}}>
           {done1&&<div style={{position:"absolute",top:12,right:12,width:22,height:22,background:"var(--green)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:12,fontWeight:900}}>✓</div>}
           <div className="dash-card-icon">🏟️</div>
-          <div className="dash-card-title">Gruppespill</div>
-          <div className="dash-card-sub">Dine kamptips og tabellplasseringer</div>
+          <div className="dash-card-title">Kamptips</div>
+          <div className="dash-card-sub">{isSubmitted?"Se hva du har tippet på kampene og tabellene":"Tips på 72 kamper og 12 gruppers tabeller"}</div>
           <div className="dash-stat" style={{marginBottom:4}}>
             <span style={{minWidth:110,fontSize:12,color:"var(--muted)"}}>Kamptips</span>
             <div className="dash-stat-bar"><div className="dash-stat-fill" style={{width:`${(tipped/72)*100}%`}}/></div>
@@ -672,23 +669,23 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
             <div className="dash-stat-bar"><div className="dash-stat-fill green" style={{width:`${(tippedStand/totalStand)*100}%`}}/></div>
             <span className="dash-stat-num" style={{color:tippedStand===48?"var(--green)":"var(--muted)"}}>{tippedStand}/48</span>
           </div>
-          <button className={`btn-dash${done1?" green":""}`} onClick={()=>onNav("groups")}>{isSubmitted?"Se gruppetips →":done1?"✓ Ferdig":"Start tipping →"}</button>
+          <button className={`btn-dash${done1?" green":""}`} onClick={()=>onNav("groups")}>{isSubmitted?"Se kamptipsene dine →":done1?"✓ Ferdig – se tips":"Gå til kamptips →"}</button>
         </div>
         )})()}
-        {/* Box 3: Spesialtips */}
+        {/* Spesialtips */}
         {(()=>{const done2=tippedSpec===10;return(
         <div className="dash-card" style={done2?{borderColor:"rgba(5,150,105,.5)",boxShadow:"0 0 0 1px rgba(5,150,105,.2),var(--shadow)"}:{}}>
           {done2&&<div style={{position:"absolute",top:12,right:12,width:22,height:22,background:"var(--green)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:12,fontWeight:900}}>✓</div>}
           <div className="dash-card-icon">🌟</div>
           <div className="dash-card-title">Spesialtips</div>
-          <div className="dash-card-sub">Toppscorer, mester, første mål og mer</div>
+          <div className="dash-card-sub">{isSubmitted?"Se hva du tippet på toppscorer, mester og mer":"Toppscorer, mester, første mål og mer"}</div>
           <div className="dash-stat">
             <span style={{minWidth:110,fontSize:12,color:"var(--muted)"}}>Besvart</span>
             <div className="dash-stat-bar"><div className="dash-stat-fill" style={{width:`${(tippedSpec/10)*100}%`}}/></div>
             <span className="dash-stat-num" style={{color:done2?"var(--green)":"var(--muted)"}}>{tippedSpec}/10</span>
           </div>
           <div style={{fontSize:12,color:"var(--muted)",marginTop:8}}>10–20 poeng per riktig svar</div>
-          <button className={`btn-dash${done2?" green":""}`} onClick={()=>onNav("special")}>{isSubmitted?"Se spesialtips →":done2?"✓ Ferdig":"Fyll inn →"}</button>
+          <button className={`btn-dash${done2?" green":""}`} onClick={()=>onNav("special")}>{isSubmitted?"Se spesialtipsene dine →":done2?"✓ Ferdig – se tips":"Fyll inn →"}</button>
         </div>
         )})()}
       </div>
