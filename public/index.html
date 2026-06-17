@@ -344,6 +344,23 @@ nav::-webkit-scrollbar{display:none}
 @keyframes rot{to{transform:rotate(360deg)}}
 .loader{display:flex;justify-content:center;align-items:center;padding:60px}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.btn-link{background:none;border:none;color:var(--blue);font-size:13px;font-weight:600;cursor:pointer;padding:0;text-decoration:none}
+.btn-link:hover{text-decoration:underline}
+.dm-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r2);padding:12px 14px;transition:box-shadow .15s}
+.dm-card:hover{box-shadow:var(--shadow)}
+.dm-meta{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.dm-badge{font-size:11px;font-weight:700;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:2px 8px;color:var(--muted)}
+.dm-badge.next{background:rgba(59,130,246,.1);color:var(--blue);border-color:rgba(59,130,246,.3)}
+.dm-badge.done{background:rgba(5,150,105,.1);color:var(--green);border-color:rgba(5,150,105,.3)}
+.dm-time{font-size:12px;color:var(--dim);margin-left:auto}
+.dm-teams{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.dm-team{font-size:14px;font-weight:700;color:var(--text);flex:1}
+.dm-team.home{text-align:right}
+.dm-team.away{text-align:left}
+.dm-vs{font-size:12px;color:var(--dim);font-weight:600;flex-shrink:0;min-width:24px;text-align:center}
+.dm-score{font-size:16px;font-weight:900;color:var(--text);flex-shrink:0;min-width:40px;text-align:center}
+.dm-tip{display:flex;align-items:center;gap:6px}
+.dm-tip-pill{font-size:12px;font-weight:700;border-radius:20px;padding:3px 10px;display:inline-block}
 @media(max-width:640px){
   .lb-hdr,.lb-row{grid-template-columns:44px 1fr 80px}
   .lb-row>:last-child,.lb-hdr>:last-child{display:none}
@@ -503,7 +520,7 @@ function SubmitModal({onClose,onConfirm,predictions,standings,mySpecial,loading}
 }
 
 // ── Dashboard ──
-function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,onNav,onSubmit}) {
+function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,flags,onNav,onNavGroup,onSubmit}) {
   const groupMatches = matches.filter(m=>m.stage==="group");
   const tipped = Object.keys(predictions).length;
   const totalStand = 48; // 12×4
@@ -511,9 +528,23 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,onN
   const tippedSpec = Object.keys(mySpecial).length;
   const total = 72+48+10;
   const done = tipped+tippedStand+tippedSpec;
-  const pct = Math.round((done/total)*100);
   const isSubmitted = !!user.submittedAt;
   const past = isPastDeadline();
+
+  // Beregn neste/nylige kamper
+  const sortedGroup = [...groupMatches].sort((a,b)=>{
+    const ta=new Date(a.match_date+"T"+(a.match_time||"12:00"));
+    const tb=new Date(b.match_date+"T"+(b.match_time||"12:00"));
+    return ta-tb;
+  });
+  const nextIdx = sortedGroup.findIndex(m=>m.status!=="finished");
+  const matchSlice = nextIdx>=0
+    ? sortedGroup.slice(Math.max(0,nextIdx-1), nextIdx+2)
+    : sortedGroup.slice(-3);
+
+  const resLabel = r => r==="H"?"Hjemme":r==="U"?"Uavgjort":"Borte";
+  const resColor = r => r==="H"?"var(--green)":r==="U"?"var(--amber)":"var(--blue)";
+
   return(
     <div className="page">
       <div className="dash-hero">
@@ -538,6 +569,54 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,onN
           </div>
         </div>
       )}
+
+      {/* Kommende og nylige kamper */}
+      {matchSlice.length>0&&(
+        <div style={{marginBottom:24}}>
+          <div className="section-header" style={{marginBottom:10}}>
+            <span className="section-title">⚽ Kampprogram</span>
+            <button className="btn-link" onClick={()=>onNav("groups")}>Se alle kamper →</button>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {matchSlice.map(m=>{
+              const pred = predictions[m.id];
+              const finished = m.status==="finished";
+              const actualR = finished&&m.home_score!==null ? (m.home_score>m.away_score?"H":m.home_score<m.away_score?"B":"U") : null;
+              const correct = pred&&actualR&&pred.result===actualR;
+              const wrong = pred&&actualR&&pred.result!==actualR;
+              const isNext = nextIdx>=0&&m.id===sortedGroup[nextIdx]?.id;
+              return(
+                <div key={m.id} className="dm-card" onClick={()=>onNavGroup&&onNavGroup(m.group_name)}
+                  style={{cursor:onNavGroup?"pointer":"default",borderLeft:isNext?"3px solid var(--blue)":"3px solid transparent"}}>
+                  <div className="dm-meta">
+                    <span className="dm-badge">{`Gruppe ${m.group_name} · Runde ${m.matchday}`}</span>
+                    <span className="dm-time">{fmt(m.match_date)}{m.match_time&&<> · {m.match_time}</>}</span>
+                    {isNext&&<span className="dm-badge next">Neste kamp</span>}
+                    {finished&&<span className="dm-badge done">Ferdig</span>}
+                  </div>
+                  <div className="dm-teams">
+                    <span className="dm-team home">{(flags&&flags[m.home_team])||""} {m.home_team}</span>
+                    {finished
+                      ? <span className="dm-score">{m.home_score}–{m.away_score}</span>
+                      : <span className="dm-vs">vs</span>}
+                    <span className="dm-team away">{m.away_team} {(flags&&flags[m.away_team])||""}</span>
+                  </div>
+                  <div className="dm-tip">
+                    {pred
+                      ? <span className="dm-tip-pill" style={{background:finished?(correct?"rgba(5,150,105,.12)":"rgba(220,38,38,.1)"):"rgba(59,130,246,.1)",color:finished?(correct?"var(--green)":"var(--red)"):"var(--blue)",border:`1.5px solid ${finished?(correct?"rgba(5,150,105,.3)":"rgba(220,38,38,.3)"):"rgba(59,130,246,.3)"}`}}>
+                          {finished?(correct?"✓ ":"✗ "):""}{resLabel(pred.result)}
+                        </span>
+                      : <span className="dm-tip-pill" style={{background:"var(--bg)",color:"var(--dim)",border:"1.5px solid var(--border)"}}>Ikke tippet</span>
+                    }
+                    {finished&&actualR&&<span style={{fontSize:12,color:"var(--muted)",marginLeft:6}}>Fasit: {resLabel(actualR)}</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="dash-grid">
         {/* Box 1: Gruppespill */}
         {(()=>{const done1=tipped===72&&tippedStand===48;return(
@@ -1318,8 +1397,9 @@ function App() {
 
       {tab==="home"&&
         <Dashboard user={user} matches={matches} predictions={predictions} standings={standings}
-          mySpecial={mySpecial} leaderboard={leaderboard}
+          mySpecial={mySpecial} leaderboard={leaderboard} flags={flags}
           onNav={t=>{setTab(t);setSelectedGroup(null);}}
+          onNavGroup={g=>{setTab("groups");setSelectedGroup(g);}}
           onSubmit={()=>setShowSubmit(true)}/>}
 
       {tab==="groups"&&!selectedGroup&&
