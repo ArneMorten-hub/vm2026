@@ -347,6 +347,8 @@ nav::-webkit-scrollbar{display:none}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .btn-link{background:none;border:none;color:var(--blue);font-size:13px;font-weight:600;cursor:pointer;padding:0;text-decoration:none}
 .btn-link:hover{text-decoration:underline}
+.btn-outline-sm{background:none;border:1.5px solid var(--blue);color:var(--blue);font-size:12px;font-weight:700;cursor:pointer;padding:4px 12px;border-radius:20px;transition:all .15s}
+.btn-outline-sm:hover{background:var(--blue);color:white}
 .dm-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r2);padding:12px 14px;transition:box-shadow .15s}
 .dm-card:hover{box-shadow:var(--shadow)}
 .dm-meta{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap}
@@ -584,7 +586,7 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
       {/* Ledertavle — fremhevet øverst */}
       <div className="section-header" style={{marginBottom:10}}>
         <span className="section-title">🏆 Hvem leder?</span>
-        <button className="btn-link" onClick={()=>onNav("leaderboard")}>Se full ledertavle →</button>
+        <button className="btn-outline-sm" onClick={()=>onNav("leaderboard")}>Se full ledertavle →</button>
       </div>
       <div className="lb-top-card">
         {leaderboard.length===0
@@ -604,7 +606,7 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
         <div style={{marginBottom:24}}>
           <div className="section-header" style={{marginBottom:10}}>
             <span className="section-title">{sectionTitle}</span>
-            <button className="btn-link" onClick={()=>onNav("groups")}>Se alle kamper →</button>
+            <button className="btn-outline-sm" onClick={()=>onNav("groups")}>Se alle kamper →</button>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {matchSlice.map(m=>{
@@ -669,7 +671,7 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
             <div className="dash-stat-bar"><div className="dash-stat-fill green" style={{width:`${(tippedStand/totalStand)*100}%`}}/></div>
             <span className="dash-stat-num" style={{color:tippedStand===48?"var(--green)":"var(--muted)"}}>{tippedStand}/48</span>
           </div>
-          <button className={`btn-dash${done1?" green":""}`} onClick={()=>onNav("groups")}>{isSubmitted?"Se kamptipsene dine →":done1?"✓ Ferdig – se tips":"Gå til kamptips →"}</button>
+          <button className={`btn-dash${done1?" green":""}`} onClick={()=>onNav("groups")}>{isSubmitted?"Se kamptipsene dine →":done1?"Se hva du tippet →":"Gå til kamptips →"}</button>
         </div>
         )})()}
         {/* Spesialtips */}
@@ -685,7 +687,7 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
             <span className="dash-stat-num" style={{color:done2?"var(--green)":"var(--muted)"}}>{tippedSpec}/10</span>
           </div>
           <div style={{fontSize:12,color:"var(--muted)",marginTop:8}}>10–20 poeng per riktig svar</div>
-          <button className={`btn-dash${done2?" green":""}`} onClick={()=>onNav("special")}>{isSubmitted?"Se spesialtipsene dine →":done2?"✓ Ferdig – se tips":"Fyll inn →"}</button>
+          <button className={`btn-dash${done2?" green":""}`} onClick={()=>onNav("special")}>{isSubmitted?"Se spesialtipsene dine →":done2?"Se hva du tippet →":"Fyll inn →"}</button>
         </div>
         )})()}
       </div>
@@ -878,7 +880,7 @@ function GroupDetailPage({group,groupsMeta,matches,predictions,standings,flags,o
 }
 
 // ── Groups Overview ──
-function GroupsOverview({matches,predictions,standings,groupsMeta,onSelectGroup}) {
+function GroupsOverview({matches,predictions,standings,groupsMeta,onSelectGroup,onNavigate}) {
   const stats = useMemo(()=>{
     const s={};
     for(const g of GROUPS){
@@ -935,6 +937,11 @@ function GroupsOverview({matches,predictions,standings,groupsMeta,onSelectGroup}
           <div className="ko-locked-sub">Etter at gruppespillet er ferdig (27. juni) vil du kunne tippe sluttspillkampene her.<br/>Sjekk tilbake etter at alle grupper er avgjort.</div>
           <div className="ko-locked-date">Åpner 27. juni 2026</div>
         </div>
+      </div>
+      <div style={{textAlign:"center",marginTop:28}}>
+        <button className="btn-dash" style={{maxWidth:280,margin:"0 auto"}} onClick={()=>onNavigate&&onNavigate("home")}>
+          🏠 Gå til forsiden
+        </button>
       </div>
     </div>
   );
@@ -1000,7 +1007,7 @@ function SpecialView({categories,allTeams,mySpecial,onSave,showToast,locked,onNa
       </div>
       <div style={{textAlign:"center",marginTop:28}}>
         <button className="btn-dash" style={{maxWidth:280,margin:"0 auto"}} onClick={()=>onNavigate&&onNavigate("home")}>
-          🏠 Gå til forsiden for innlevering →
+          🏠 Gå til forsiden
         </button>
       </div>
     </div>
@@ -1425,7 +1432,7 @@ function App() {
 
       {tab==="groups"&&!selectedGroup&&
         <GroupsOverview matches={matches} predictions={predictions} standings={standings}
-          groupsMeta={groupsMeta} onSelectGroup={g=>{setSelectedGroup(g);setTab("groups");}}/>}
+          groupsMeta={groupsMeta} onSelectGroup={g=>{setSelectedGroup(g);setTab("groups");}} onNavigate={setTab}/>}
 
       {tab==="groups"&&selectedGroup&&
         <GroupDetailPage group={selectedGroup} groupsMeta={groupsMeta} matches={matches}
