@@ -405,6 +405,12 @@ const fmt = d => {
   if(!d) return "";
   return new Date(d+(d.length===10?"T12:00:00":"")).toLocaleDateString("no-NO",{day:"numeric",month:"short"});
 };
+// Konverterer UTC-tid lagret i databasen til norsk tid (CEST = UTC+2)
+const toNorskTid = (dateStr, timeStr) => {
+  if(!dateStr||!timeStr) return timeStr||"";
+  const dt = new Date(`${dateStr}T${timeStr}:00Z`);
+  return dt.toLocaleTimeString("no-NO",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/Oslo"});
+};
 const rankIcon = i => ["🥇","🥈","🥉"][i] ?? `${i+1}.`;
 const isPastDeadline = () => new Date() > DEADLINE;
 
@@ -591,7 +597,7 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
                     <span className="dm-badge">{`Gruppe ${m.group_name} · Runde ${m.matchday}`}</span>
                     {isNext&&<span className="dm-badge next">Neste kamp</span>}
                     {finished&&<span className="dm-badge done">Ferdig</span>}
-                    <span className="dm-time">{fmt(m.match_date)}{m.match_time&&<> · kl. {m.match_time}</>}</span>
+                    <span className="dm-time">{fmt(m.match_date)}{m.match_time&&<> · kl. {toNorskTid(m.match_date,m.match_time)}</>}</span>
                   </div>
                   <div className="dm-teams">
                     <span className="dm-team home">{m.home_team}</span>
@@ -709,7 +715,7 @@ function MatchCard({m,result,onPick,flags,locked}) {
     <div className={cls}>
       <div className="match-top">
         <span className="match-round">{m.matchday?`Runde ${m.matchday}`:STAGE_NO[m.stage]||m.stage}</span>
-        <span className="match-time">{fmt(m.match_date)}{m.match_time&&<span className="time-chip">{m.match_time}</span>}</span>
+        <span className="match-time">{fmt(m.match_date)}{m.match_time&&<span className="time-chip">{toNorskTid(m.match_date,m.match_time)}</span>}</span>
       </div>
       {isTbd?(
         <div style={{color:"var(--dim)",fontSize:13,textAlign:"center",padding:"4px 0"}}>{m.label||"Kamp TBD"}</div>
