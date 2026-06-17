@@ -361,12 +361,12 @@ nav::-webkit-scrollbar{display:none}
 .dm-score{font-size:18px;font-weight:900;color:var(--text);text-align:center;padding:0 4px}
 .dm-tip{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .dm-tip-pill{font-size:12px;font-weight:700;border-radius:20px;padding:3px 10px;display:inline-block}
-.dm-tip-row{display:flex;gap:5px;margin-top:8px}
-.dm-tip-btn{flex:1;text-align:center;font-size:12px;font-weight:600;border-radius:8px;padding:6px 4px;border:1.5px solid var(--border);color:var(--dim);background:var(--bg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dm-tip-btn.chosen{border-color:var(--blue);color:var(--blue);background:rgba(59,130,246,.1);font-weight:800}
-.dm-tip-btn.correct{border-color:var(--green)!important;color:var(--green)!important;background:rgba(5,150,105,.1)!important;font-weight:800!important}
-.dm-tip-btn.wrong{border-color:var(--red)!important;color:var(--red)!important;background:rgba(220,38,38,.08)!important;font-weight:800!important}
-.dm-tip-btn.fasit{border-color:rgba(5,150,105,.3);color:var(--green-dark,#047857);background:rgba(5,150,105,.04)}
+.dm-tip-line{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+.dm-tip-label{font-size:12px;color:var(--dim)}
+.dm-tip-val{font-size:13px;font-weight:700;color:var(--blue)}
+.dm-tip-val.t-ok{color:var(--green)}
+.dm-tip-val.t-bad{color:var(--red)}
+.dm-tip-fasit{font-size:11px;color:var(--muted);background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);border-radius:6px;padding:1px 6px}
 @media(max-width:640px){
   .lb-hdr,.lb-row{grid-template-columns:44px 1fr 80px}
   .lb-row>:last-child,.lb-hdr>:last-child{display:none}
@@ -617,19 +617,20 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
                       : <span className="dm-vs">–</span>}
                     <span className="dm-team away">{m.away_team}</span>
                   </div>
-                  <div className="dm-tip-row">
-                    {["H","U","B"].map(r=>{
-                      const lbl=r==="H"?"Hjem":r==="U"?"Uavgjort":"Borte";
-                      const chosen=pred?.result===r;
-                      const isCorrect=finished&&actualR===r&&chosen;
-                      const isWrong=finished&&actualR!==r&&chosen;
-                      const isFasit=finished&&actualR===r&&!chosen;
-                      return(
-                        <span key={r} className={`dm-tip-btn${chosen?" chosen":""}${isCorrect?" correct":""}${isWrong?" wrong":""}${isFasit?" fasit":""}`}>
-                          {lbl}{isCorrect?" ✓":""}{isWrong?" ✗":""}
+                  <div className="dm-tip-line">
+                    {pred ? (
+                      <>
+                        <span className="dm-tip-label">Din tippe:</span>
+                        <span className={`dm-tip-val${finished?(correct?" t-ok":" t-bad"):""}`}>
+                          {resLabel(pred.result)}{finished?(correct?" ✓":" ✗"):""}
                         </span>
-                      );
-                    })}
+                        {finished&&!correct&&actualR&&
+                          <span className="dm-tip-fasit">Fasit: {resLabel(actualR)}</span>
+                        }
+                      </>
+                    ) : (
+                      <span className="dm-tip-label" style={{fontStyle:"italic"}}>Ikke tippet</span>
+                    )}
                   </div>
                 </div>
               );

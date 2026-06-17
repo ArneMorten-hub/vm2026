@@ -17,7 +17,7 @@ export const groups: Record<string, GroupData> = {
   I: { teams: [{ name: "France", flag: "🇫🇷" }, { name: "Senegal", flag: "🇸🇳" }, { name: "Iraq", flag: "🇮🇶" }, { name: "Norway", flag: "🇳🇴" }], md1: "2026-06-16", md2: "2026-06-22", md3: "2026-06-27" },
   J: { teams: [{ name: "Argentina", flag: "🇦🇷" }, { name: "Algeria", flag: "🇩🇿" }, { name: "Austria", flag: "🇦🇹" }, { name: "Jordan", flag: "🇯🇴" }], md1: "2026-06-16", md2: "2026-06-22", md3: "2026-06-27" },
   K: { teams: [{ name: "Portugal", flag: "🇵🇹" }, { name: "DR Congo", flag: "🇨🇩" }, { name: "Uzbekistan", flag: "🇺🇿" }, { name: "Colombia", flag: "🇨🇴" }], md1: "2026-06-17", md2: "2026-06-23", md3: "2026-06-27" },
-  L: { teams: [{ name: "England", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" }, { name: "Croatia", flag: "🇭🇷" }, { name: "Ghana", flag: "🇬🇭" }, { name: "Panama", flag: "🇵🇦" }], md1: "2026-06-18", md2: "2026-06-24", md3: "2026-06-27" },
+  L: { teams: [{ name: "England", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" }, { name: "Croatia", flag: "🇭🇷" }, { name: "Ghana", flag: "🇬🇭" }, { name: "Panama", flag: "🇵🇦" }], md1: "2026-06-17", md2: "2026-06-24", md3: "2026-06-27" },
 };
 
 export type MatchSeed = {
