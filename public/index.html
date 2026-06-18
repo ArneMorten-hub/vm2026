@@ -1485,10 +1485,11 @@ function App() {
     }catch(ex){showToast(ex.message,"bad");}finally{setSubmitLoading(false);}
   }
 
+  useEffect(()=>{window.scrollTo(0,0);},[tab]);
+
   if(loading) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh"}}><div className="spin"/></div>;
   if(!user) return <LandingPage onLogin={u=>{setUser(u);}}/>;
 
-  useEffect(()=>{window.scrollTo(0,0);},[tab]);
 
   const isLocked = !!user.submittedAt || isPastDeadline();
   const navTabs=[
