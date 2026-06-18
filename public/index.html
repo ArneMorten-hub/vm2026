@@ -653,6 +653,11 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
         </div>
       )}
 
+      {isSubmitted && (
+        <div className="section-header" style={{marginBottom:10}}>
+          <span className="section-title">📋 Hva du har tippet</span>
+        </div>
+      )}
       {isSubmitted ? (
         <div className="dash-card" style={{borderColor:"rgba(59,130,246,.4)",marginBottom:24}}>
           <div className="dash-card-icon">📋</div>
@@ -1482,6 +1487,8 @@ function App() {
 
   if(loading) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh"}}><div className="spin"/></div>;
   if(!user) return <LandingPage onLogin={u=>{setUser(u);}}/>;
+
+  useEffect(()=>{window.scrollTo(0,0);},[tab]);
 
   const isLocked = !!user.submittedAt || isPastDeadline();
   const navTabs=[
