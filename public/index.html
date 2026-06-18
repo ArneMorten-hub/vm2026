@@ -691,6 +691,15 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
         </div>
         )})()}
       </div>
+      {/* Mine tips-kort */}
+      {isSubmitted&&(
+        <div className="dash-card" style={{borderColor:"rgba(59,130,246,.4)"}}>
+          <div className="dash-card-icon">📋</div>
+          <div className="dash-card-title">Mine tips</div>
+          <div className="dash-card-sub">Se en full oversikt over alle tipsene dine — kamper, tabeller og spesialtips</div>
+          <button className="btn-dash" onClick={()=>onNav("mytips")}>Se mine tips →</button>
+        </div>
+      )}
       {/* Send inn-knapp */}
       {!isSubmitted&&!past&&(
         <div style={{background:"var(--white)",border:"1.5px solid var(--border)",borderRadius:"var(--r3)",padding:"20px 24px",textAlign:"center",boxShadow:"var(--shadow-sm)"}}>
@@ -1060,6 +1069,82 @@ function LeaderboardView({currentUser}) {
   );
 }
 
+// ── Mine tips ──
+function MyTipsView({matches,predictions,standings,mySpecial,categories,flags}) {
+  const [tab,setTab]=useState("matches");
+  const resLabel = r => r==="H"?"🏠 H":r==="U"?"🤝 U":r==="B"?"✈️ B":"–";
+  const actualRes = (ah,aa) => ah===null?"–":ah>aa?"🏠 H":ah<aa?"✈️ B":"🤝 U";
+  const groupMatches=[...matches].filter(m=>m.stage==="group")
+    .sort((a,b)=>{const d=a.match_date.localeCompare(b.match_date);return d!==0?d:(a.match_time||"").localeCompare(b.match_time||"");});
+  // Convert standings {group:{pos:team}} → byGroup {group:[{position,team}]}
+  const byGroup={};
+  for(const [g,posMap] of Object.entries(standings)){
+    byGroup[g]=Object.entries(posMap).map(([pos,team])=>({position:parseInt(pos),team}));
+  }
+  return(
+    <div className="page">
+      <h2 style={{fontSize:20,fontWeight:800,marginBottom:16}}>📋 Mine tips</h2>
+      <div className="modal-tabs">
+        {[["matches","⚽ Kamper"],["standings","📋 Tabell"],["special","🌟 Spesialtips"]].map(([k,l])=>(
+          <button key={k} className={`mtab ${tab===k?"on":""}`} onClick={()=>setTab(k)}>{l}</button>
+        ))}
+      </div>
+      {tab==="matches"&&(
+        <div style={{overflowX:"auto"}}>
+          <table className="pred-table">
+            <thead><tr><th>Kamp</th><th>Runde</th><th>Dato</th><th>Tips</th><th>Fasit</th><th>Pts</th></tr></thead>
+            <tbody>
+              {groupMatches.map(m=>{
+                const result=predictions[m.id]?.result;
+                const ptsOk=m.status==="finished"&&m.home_score!==null;
+                const actR=ptsOk?actualRes(m.home_score,m.away_score):null;
+                const correct=ptsOk&&result&&actR&&result===actR.replace(/[^HUB]/g,"");
+                return(
+                  <tr key={m.id}>
+                    <td style={{fontWeight:700}}>{m.home_team} – {m.away_team}</td>
+                    <td style={{color:"var(--muted)"}}>Gr.{m.group_name} R{m.matchday}</td>
+                    <td style={{color:"var(--dim)",fontSize:12}}>{fmt(m.match_date)}</td>
+                    <td><strong>{result?resLabel(result):<span style={{color:"var(--dim)"}}>–</span>}</strong></td>
+                    <td>{actR||<span style={{color:"var(--dim)"}}>–</span>}</td>
+                    <td style={{color:ptsOk?(correct?"var(--green)":"var(--red)"):"var(--dim)"}}>{ptsOk?(correct?"✓ 3p":"✗ 0p"):"–"}</td>
+                  </tr>
+                );
+              })}
+              {!groupMatches.length&&<tr><td colSpan="6"><div className="empty">Ingen kamper</div></td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {tab==="standings"&&(
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:10}}>
+          {Object.entries(byGroup).sort(([a],[b])=>a.localeCompare(b)).map(([g,rows])=>(
+            <div key={g} style={{background:"var(--bg)",border:"1px solid var(--border)",borderRadius:12,padding:12}}>
+              <div style={{fontWeight:800,color:"var(--blue)",marginBottom:8,fontSize:14}}>Gruppe {g}</div>
+              {[1,2,3,4].map(pos=>{const r=rows.find(r=>r.position===pos);return(
+                <div key={pos} style={{display:"flex",gap:8,fontSize:13,padding:"3px 0",alignItems:"center"}}>
+                  <span style={{color:"var(--dim)",minWidth:20,fontWeight:800}}>{pos}.</span>
+                  <span>{r?<span>{flags[r.team]||""} {r.team}</span>:<span style={{color:"var(--dim)"}}>–</span>}</span>
+                </div>
+              );})}
+            </div>
+          ))}
+          {!Object.keys(byGroup).length&&<div className="empty">Ingen tabellsvar</div>}
+        </div>
+      )}
+      {tab==="special"&&(
+        <table className="pred-table">
+          <thead><tr><th>Kategori</th><th>Svar</th></tr></thead>
+          <tbody>{categories.map(cat=>(
+            <tr key={cat.id}><td>{cat.label}</td>
+              <td>{mySpecial[cat.id]?<strong>{mySpecial[cat.id]}</strong>:<span style={{color:"var(--dim)"}}>–</span>}</td>
+            </tr>
+          ))}</tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
 // ── Admin: User Modal ──
 function UserModal({userId,onClose,categories,flags}) {
   const [data,setData]=useState(null);const [tab,setTab]=useState("matches");
@@ -1398,6 +1483,7 @@ function App() {
     {id:"home",label:"🏠 Hjem"},
     {id:"groups",label:"⚽ Gruppespill"},
     {id:"special",label:"🌟 Spesialtips"},
+    {id:"mytips",label:"📋 Mine tips"},
     {id:"leaderboard",label:"📊 Ledertavle"},
     ...(user.isAdmin?[{id:"admin",label:"⚙️ Admin"}]:[]),
   ];
@@ -1443,6 +1529,10 @@ function App() {
       {tab==="special"&&
         <SpecialView categories={categories} allTeams={allTeams} mySpecial={mySpecial}
           onSave={handleSpecialSave} showToast={showToast} locked={isLocked} onNavigate={setTab}/>}
+
+      {tab==="mytips"&&
+        <MyTipsView matches={matches} predictions={predictions} standings={standings}
+          mySpecial={mySpecial} categories={categories} flags={flags}/>}
 
       {tab==="leaderboard"&&<LeaderboardView currentUser={user}/>}
 
