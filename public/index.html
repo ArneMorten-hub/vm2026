@@ -554,7 +554,7 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
   const todayMatches = sortedGroup.filter(m=>m.match_date===todayStr);
   const nextFuture = sortedGroup.find(m=>m.status!=="finished"&&m.match_date>todayStr);
   const nextMatch = sortedGroup.find(m=>m.status!=="finished");
-  const lastFinished = sortedGroup.filter(m=>m.status==="finished").slice(-1);
+  const lastFinished = sortedGroup.filter(m=>m.status==="finished"&&m.match_date!==todayStr).slice(-1);
   // Vis dagens kamper + 1 siste avsluttet; ellers neste dags kamper
   const matchSlice = todayMatches.length>0
     ? [...lastFinished, ...todayMatches]
