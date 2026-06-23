@@ -38,13 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let u = (await pool.query("SELECT * FROM users WHERE LOWER(name) = LOWER($1)", [name.trim()])).rows[0];
 
     if (!u) {
-      const cnt = (await pool.query("SELECT COUNT(*) as c FROM users")).rows[0].c;
-      const isAdmin = parseInt(cnt) === 0 ? 1 : 0;
-      const r = await pool.query(
-        "INSERT INTO users (name, email, is_admin) VALUES ($1,$2,$3) RETURNING *",
-        [name.trim(), "", isAdmin]
-      );
-      u = r.rows[0];
+      return err(res, "Fann ikkje dette namnet. Skriv namnet heilt likt som du registrerte deg med fyrste gong — store og små bokstavar, bindestrek og mellomrom tel.");
     }
 
     const token = generateToken();
