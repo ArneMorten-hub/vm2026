@@ -79,7 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (path === "/api/my-predictions") {
     const u = await requireAuth(pool, req.headers as any);
     if ("error" in u) return err(res, u.error, u.status);
-    return ok(res, (await pool.query("SELECT match_id, result FROM predictions WHERE user_id=$1", [u.id])).rows);
+    return ok(res, (await pool.query("SELECT match_id, result, home_score_pred, away_score_pred FROM predictions WHERE user_id=$1", [u.id])).rows);
   }
 
   const matchPredMatch = path.match(/^\/api\/predictions\/match\/(\d+)$/);
@@ -94,13 +94,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (match.status === "finished") return err(res, "Kampen er ferdig spilt");
     if (match.stage === "group" && isPastDeadline()) return err(res, "Fristen for gruppespill er ute");
 
-    const { result } = body as any;
-    if (!["H", "U", "B"].includes(result)) return err(res, "Ugyldig tips – må være H, U eller B");
+    const { result, homeScorePred, awayScorePred } = body as any;
+    const validResults = match.stage === "group" ? ["H", "U", "B"] : ["H", "B"];
+    if (!validResults.includes(result)) return err(res, "Ugyldig tips");
+
+    const hsp = homeScorePred != null && awayScorePred != null ? parseInt(homeScorePred) : null;
+    const asp = homeScorePred != null && awayScorePred != null ? parseInt(awayScorePred) : null;
 
     await pool.query(
-      `INSERT INTO predictions (user_id,match_id,result) VALUES ($1,$2,$3)
-       ON CONFLICT(user_id,match_id) DO UPDATE SET result=EXCLUDED.result,updated_at=NOW()`,
-      [u.id, id, result]
+      `INSERT INTO predictions (user_id,match_id,result,home_score_pred,away_score_pred) VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT(user_id,match_id) DO UPDATE SET result=EXCLUDED.result,home_score_pred=EXCLUDED.home_score_pred,away_score_pred=EXCLUDED.away_score_pred,updated_at=NOW()`,
+      [u.id, id, result, hsp, asp]
     );
     return ok(res, { ok: true });
   }
@@ -194,11 +198,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       saMap[r.group_name][r.position] = r.team;
     }
 
-    const allPreds = (await pool.query("SELECT user_id,match_id,result FROM predictions")).rows;
-    const predMap: Record<number, Record<number, string>> = {};
+    const allPreds = (await pool.query("SELECT user_id,match_id,result,home_score_pred,away_score_pred FROM predictions")).rows;
+    const predMap: Record<number, Record<number, {result:string,hsp:number|null,asp:number|null}>> = {};
     for (const p of allPreds) {
       if (!predMap[p.user_id]) predMap[p.user_id] = {};
-      predMap[p.user_id][p.match_id] = p.result;
+      predMap[p.user_id][p.match_id] = { result: p.result, hsp: p.home_score_pred, asp: p.away_score_pred };
     }
 
     const allSpecials = (await pool.query("SELECT user_id,category,value FROM special_predictions")).rows;
@@ -221,13 +225,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     for (const u of allUsers) submittedMap[u.id] = u.submitted_at;
 
     const board = users.map((user: any) => {
-      let matchPts = 0, correctResults = 0, predicted = 0;
+      let matchPts = 0, knockoutPts = 0, knockoutScoreBonus = 0, correctResults = 0, predicted = 0;
       for (const m of finishedMatches) {
         const p = predMap[user.id]?.[m.id];
         if (p && m.home_score !== null && m.away_score !== null) {
           predicted++;
-          const pts = calcPoints(p, m.home_score, m.away_score, m.stage);
-          matchPts += pts;
+          const pts = calcPoints(p.result, m.home_score, m.away_score, m.stage, p.hsp, p.asp);
+          if (m.stage === "group") {
+            matchPts += pts;
+          } else {
+            const basePts = calcPoints(p.result, m.home_score, m.away_score, m.stage);
+            knockoutPts += basePts;
+            knockoutScoreBonus += pts - basePts;
+          }
           if (pts > 0) correctResults++;
         }
       }
@@ -252,9 +262,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       return {
         id: user.id, name: user.name,
-        matchPoints: matchPts, specialPoints: specialPts,
+        matchPoints: matchPts, knockoutPoints: knockoutPts, knockoutScoreBonus,
+        specialPoints: specialPts,
         standingsPoints: standingsPts, standingsBonus: standingBonus,
-        totalPoints: matchPts + specialPts + standingsPts + standingBonus,
+        totalPoints: matchPts + knockoutPts + knockoutScoreBonus + specialPts + standingsPts + standingBonus,
         predicted, correctResults,
         specialCount: userSpecials.length,
         standingsCount: Object.values(userStMap[user.id] || {}).reduce((s, g) => s + Object.keys(g).length, 0),

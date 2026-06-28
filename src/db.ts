@@ -20,8 +20,16 @@ export type MatchRow = {
   home_score: number | null; away_score: number | null; status: string;
 };
 
-export function calcPoints(predictedResult: string, rh: number, ra: number, stage: string): number {
+const STAGE_BASE: Record<string, number> = { group: 3, r32: 4, r16: 5, qf: 6, sf: 8, "3rd": 6, final: 12 };
+const SCORE_BONUS = 3;
+
+export function calcPoints(
+  predictedResult: string, rh: number, ra: number, stage: string,
+  hsp?: number | null, asp?: number | null
+): number {
   const actual = rh > ra ? "H" : rh < ra ? "B" : "U";
-  if (predictedResult === actual) return stage === "group" ? 3 : 5;
-  return 0;
+  if (predictedResult !== actual) return 0;
+  const base = STAGE_BASE[stage] ?? 3;
+  const bonus = (stage !== "group" && hsp != null && asp != null && hsp === rh && asp === ra) ? SCORE_BONUS : 0;
+  return base + bonus;
 }

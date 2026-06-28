@@ -899,7 +899,7 @@ function GroupDetailPage({group,groupsMeta,matches,predictions,standings,flags,o
 }
 
 // ── Groups Overview ──
-function GroupsOverview({matches,predictions,standings,groupsMeta,onSelectGroup,onNavigate}) {
+function GroupsOverview({matches,predictions,standings,groupsMeta,onSelectGroup,onNavigate,currentUser,onSave,flags}) {
   const stats = useMemo(()=>{
     const s={};
     for(const g of GROUPS){
@@ -950,12 +950,14 @@ function GroupsOverview({matches,predictions,standings,groupsMeta,onSelectGroup,
         <div className="section-header">
           <span className="section-title">🏆 Sluttspill</span>
         </div>
-        <div className="ko-locked">
-          <div className="ko-locked-icon">🔒</div>
-          <div className="ko-locked-title">Sluttspill er ikke åpent ennå</div>
-          <div className="ko-locked-sub">Etter at gruppespillet er ferdig (27. juni) vil du kunne tippe sluttspillkampene her.<br/>Sjekk tilbake etter at alle grupper er avgjort.</div>
-          <div className="ko-locked-date">Åpner 27. juni 2026</div>
-        </div>
+        {currentUser?.isAdmin
+          ? <KnockoutBracket matches={matches} predictions={predictions} flags={flags||{}} onSave={onSave} locked={false}/>
+          : <div className="ko-locked">
+              <div className="ko-locked-icon">🔒</div>
+              <div className="ko-locked-title">Sluttspill åpner snart</div>
+              <div className="ko-locked-sub">Tippingen for sluttspillet opnar når alt er klart. Sjekk tilbake!</div>
+            </div>
+        }
       </div>
       <div style={{textAlign:"center",marginTop:28}}>
         <button className="btn-dash" style={{maxWidth:280,margin:"0 auto"}} onClick={()=>onNavigate&&onNavigate("home")}>
@@ -1034,6 +1036,108 @@ function SpecialView({categories,allTeams,mySpecial,onSave,showToast,locked,onNa
 }
 
 // ── Leaderboard ──
+// ── Knockout Bracket ──
+function KnockoutMatchCard({match,pred,flags,onSave,locked}) {
+  const isTBD = match.home_team==="TBD"||match.away_team==="TBD";
+  const res = pred?.result;
+  const [hsp,setHsp]=useState(pred?.home_score_pred!=null?String(pred.home_score_pred):"");
+  const [asp,setAsp]=useState(pred?.away_score_pred!=null?String(pred.away_score_pred):"");
+  const [saving,setSaving]=useState(false);
+
+  async function pick(r) {
+    if(locked||isTBD) return;
+    setSaving(true);
+    try{
+      const h=hsp!==""?parseInt(hsp):null;
+      const a=asp!==""?parseInt(asp):null;
+      await onSave(match.id,r,h,a);
+    }finally{setSaving(false);}
+  }
+  async function saveScore() {
+    if(locked||isTBD||res==null) return;
+    const h=hsp!==""?parseInt(hsp):null;
+    const a=asp!==""?parseInt(asp):null;
+    if(h==null||a==null) return;
+    setSaving(true);
+    try{await onSave(match.id,res,h,a);}finally{setSaving(false);}
+  }
+
+  const hf=flags[match.home_team]||"";
+  const af=flags[match.away_team]||"";
+  const finished=match.status==="finished";
+  const actual=finished&&match.home_score!=null?(match.home_score>match.away_score?"H":"B"):null;
+
+  return(
+    <div style={{background:"var(--white)",border:"1.5px solid var(--border)",borderRadius:"var(--r2)",padding:"10px 12px",marginBottom:8,opacity:isTBD?0.5:1}}>
+      <div style={{fontSize:11,color:"var(--muted)",marginBottom:6,fontWeight:600}}>
+        {match.label}
+        {finished&&<span style={{marginLeft:6,color:"var(--green)",fontWeight:700}}>{match.home_score}–{match.away_score}</span>}
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:8}}>
+        {[{team:match.home_team,flag:hf,r:"H"},{team:match.away_team,flag:af,r:"B"}].map(({team,flag,r})=>(
+          <button key={r} onClick={()=>pick(r)} disabled={locked||isTBD||saving}
+            style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:"var(--r)",border:`2px solid ${res===r?"var(--blue)":actual===r?"var(--green)":"var(--border)"}`,background:res===r?"var(--blue-light)":actual===r?"var(--green-light)":"var(--white)",cursor:locked||isTBD?"default":"pointer",textAlign:"left",fontWeight:res===r?700:400,fontSize:13}}>
+            <span>{flag}</span>
+            <span style={{flex:1}}>{team}</span>
+            {res===r&&<span style={{fontSize:11,color:"var(--blue)",fontWeight:700}}>✓</span>}
+            {actual===r&&res!==r&&<span style={{fontSize:11,color:"var(--green)"}}>✓</span>}
+          </button>
+        ))}
+      </div>
+      {!locked&&!isTBD&&(
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <span style={{fontSize:11,color:"var(--muted)"}}>Stilling:</span>
+          <input type="number" min="0" max="20" value={hsp} onChange={e=>setHsp(e.target.value)} onBlur={saveScore}
+            style={{width:38,textAlign:"center",fontSize:13,padding:"3px 4px",border:"1px solid var(--border)",borderRadius:6}}/>
+          <span style={{color:"var(--muted)"}}>–</span>
+          <input type="number" min="0" max="20" value={asp} onChange={e=>setAsp(e.target.value)} onBlur={saveScore}
+            style={{width:38,textAlign:"center",fontSize:13,padding:"3px 4px",border:"1px solid var(--border)",borderRadius:6}}/>
+          {(hsp!==""&&asp!=="")&&<span style={{fontSize:11,color:"var(--green)"}}>+3p</span>}
+        </div>
+      )}
+      {(pred?.home_score_pred!=null)&&locked&&(
+        <div style={{fontSize:11,color:"var(--muted)"}}>Stilling: {pred.home_score_pred}–{pred.away_score_pred}</div>
+      )}
+    </div>
+  );
+}
+
+function KnockoutBracket({matches,predictions,flags,onSave,locked}) {
+  const rounds=[
+    {key:"r32",label:"16-delsfinale"},
+    {key:"r16",label:"8-delsfinale"},
+    {key:"qf",label:"Kvartfinale"},
+    {key:"sf",label:"Semifinale"},
+    {key:"3rd",label:"Bronsefinale"},
+    {key:"final",label:"Finale"},
+  ];
+  const byStage={};
+  for(const r of rounds) byStage[r.key]=matches.filter(m=>m.stage===r.key).sort((a,b)=>a.id-b.id);
+
+  return(
+    <div style={{overflowX:"auto",paddingBottom:8}}>
+      <div style={{display:"flex",gap:12,alignItems:"flex-start",minWidth:"max-content"}}>
+        {rounds.filter(r=>r.key!=="3rd").map(r=>(
+          <div key={r.key} style={{width:230,flexShrink:0}}>
+            <div style={{fontWeight:700,fontSize:13,color:"var(--muted)",marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>{r.label}</div>
+            {byStage[r.key].map(m=>(
+              <KnockoutMatchCard key={m.id} match={m} pred={predictions[m.id]} flags={flags} onSave={onSave} locked={locked}/>
+            ))}
+          </div>
+        ))}
+      </div>
+      {byStage["3rd"].length>0&&(
+        <div style={{marginTop:16,maxWidth:250}}>
+          <div style={{fontWeight:700,fontSize:13,color:"var(--muted)",marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Bronsefinale</div>
+          {byStage["3rd"].map(m=>(
+            <KnockoutMatchCard key={m.id} match={m} pred={predictions[m.id]} flags={flags} onSave={onSave} locked={locked}/>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function LeaderboardView({currentUser}) {
   const [data,setData]=useState(null);
   const [tick,setTick]=useState(0);
@@ -1061,7 +1165,12 @@ function LeaderboardView({currentUser}) {
             <div className="lb-pts">
               <div className="pts">{u.totalPoints}</div>
               <div className="bar"><div className="bar-fill" style={{width:`${(u.totalPoints/max)*100}%`}}/></div>
-              <div className="sub">Kam:{u.matchPoints} · Tab:{u.standingsPoints+u.standingsBonus} · Spes:{u.specialPoints}</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:"4px 10px",marginTop:4}}>
+                <span style={{fontSize:11,color:"var(--muted)"}}>⚽ Gruppe: <strong>{u.matchPoints}</strong></span>
+                {(u.knockoutPoints||0)>0&&<span style={{fontSize:11,color:"var(--muted)"}}>🏆 Sluttspill: <strong>{u.knockoutPoints}{(u.knockoutScoreBonus||0)>0?` +${u.knockoutScoreBonus}p stilling`:""}</strong></span>}
+                <span style={{fontSize:11,color:"var(--muted)"}}>📋 Tabell: <strong>{u.standingsPoints}{u.standingsBonus>0?` +${u.standingsBonus}p`:""}</strong></span>
+                {u.specialPoints>0&&<span style={{fontSize:11,color:"var(--muted)"}}>🌟 Spesial: <strong>{u.specialPoints}</strong></span>}
+              </div>
             </div>
             <div className="lb-stats">
               <span className="st">✓ {u.correctResults} riktige</span>
@@ -1072,8 +1181,9 @@ function LeaderboardView({currentUser}) {
       </div>
       <div className="lb-legend">
         <span>⚽ Gruppe: 3p riktig utfall (H/U/B)</span>
+        <span>🏆 Sluttspill: 4–12p per runde · +3p rett stilling etter 90 min</span>
         <span>📋 Tabellplass: 3p · +10p bonus for perfekt gruppe</span>
-        <span>🌟 Spesialtips: 20p</span>
+        <span>🌟 Spesialtips: 10–20p</span>
       </div>
     </div>
   );
@@ -1455,18 +1565,19 @@ function App() {
       api("/api/my-special"),api("/api/my-standings"),api("/api/leaderboard"),
     ]);
     setMatches(ms);
-    // predictions: array of {match_id, result}
     const predMap={};
-    for(const p of preds) predMap[p.match_id]={result:p.result};
+    for(const p of preds) predMap[p.match_id]={result:p.result,home_score_pred:p.home_score_pred??null,away_score_pred:p.away_score_pred??null};
     setPredictions(predMap);
     setCategories(cats);setAllTeams(teams);setFlags(fl);setGroupsMeta(gm);
     setMySpecial(sp);setStandings(st);setLeaderboard(lb);
   }
   async function refreshMatches(){const ms=await api("/api/matches");setMatches(ms);}
 
-  async function handleSave(matchId,result){
-    await api(`/api/predictions/match/${matchId}`,{method:"POST",body:JSON.stringify({result})});
-    setPredictions(p=>({...p,[matchId]:{result}}));
+  async function handleSave(matchId,result,homeScorePred,awayScorePred){
+    const body={result};
+    if(homeScorePred!=null&&awayScorePred!=null){body.homeScorePred=homeScorePred;body.awayScorePred=awayScorePred;}
+    await api(`/api/predictions/match/${matchId}`,{method:"POST",body:JSON.stringify(body)});
+    setPredictions(p=>({...p,[matchId]:{result,home_score_pred:homeScorePred??null,away_score_pred:awayScorePred??null}}));
   }
   async function handleSpecialSave(cat,value){
     await api(`/api/predictions/special/${cat}`,{method:"POST",body:JSON.stringify({value})});
@@ -1535,7 +1646,8 @@ function App() {
 
       {tab==="groups"&&!selectedGroup&&
         <GroupsOverview matches={matches} predictions={predictions} standings={standings}
-          groupsMeta={groupsMeta} onSelectGroup={g=>{setSelectedGroup(g);setTab("groups");}} onNavigate={setTab}/>}
+          groupsMeta={groupsMeta} onSelectGroup={g=>{setSelectedGroup(g);setTab("groups");}} onNavigate={setTab}
+          currentUser={user} onSave={handleSave} flags={flags}/>}
 
       {tab==="groups"&&selectedGroup&&
         <GroupDetailPage group={selectedGroup} groupsMeta={groupsMeta} matches={matches}
