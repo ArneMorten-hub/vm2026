@@ -1141,7 +1141,7 @@ function KnockoutMatchCard({match,pred,flags,onSave,locked,effectiveHome,effecti
   const actual=finished&&match.home_score!=null?(match.home_score>match.away_score?"H":"B"):null;
 
   return(
-    <div style={{background:"var(--white)",border:"1.5px solid var(--border)",borderRadius:"var(--r2)",padding:"8px 10px",marginBottom:8,opacity:isTBD?0.45:1}}>
+    <div style={{background:"var(--white)",border:"1.5px solid var(--border)",borderRadius:"var(--r2)",padding:"8px 10px",opacity:isTBD?0.45:1}}>
       <div style={{fontSize:10,color:"var(--muted)",marginBottom:5,fontWeight:600}}>
         {match.label}
         {finished&&<span style={{marginLeft:6,color:"var(--green)",fontWeight:700}}>{match.home_score}–{match.away_score}</span>}
@@ -1151,9 +1151,8 @@ function KnockoutMatchCard({match,pred,flags,onSave,locked,effectiveHome,effecti
         {team:effAway,flag:af,r:"B",scoreVal:asp,setScore:setAsp},
       ].map(({team,flag,r,scoreVal,setScore})=>(
         <div key={r} style={{display:"flex",alignItems:"center",gap:4,marginBottom:3}}>
-          <div role="button" tabIndex={locked||isTBD?-1:0}
-            onClick={()=>pick(r)}
-            onKeyDown={e=>(e.key==="Enter"||e.key===" ")&&pick(r)}
+          <button type="button" onClick={()=>pick(r)}
+            disabled={locked||isTBD||saving}
             style={{flex:1,display:"flex",alignItems:"center",gap:5,padding:"4px 6px",borderRadius:"var(--r)",
               border:`2px solid ${res===r?"var(--blue)":actual===r?"var(--green)":"var(--border)"}`,
               background:res===r?"var(--blue-light)":actual===r?"var(--green-light)":"var(--white)",
@@ -1162,7 +1161,7 @@ function KnockoutMatchCard({match,pred,flags,onSave,locked,effectiveHome,effecti
             <span style={{flex:1,fontSize:11,fontWeight:res===r?700:400}}>{team}</span>
             {res===r&&<span style={{fontSize:9,color:"var(--blue)"}}>✓</span>}
             {actual===r&&res!==r&&<span style={{fontSize:9,color:"var(--green)"}}>✓</span>}
-          </div>
+          </button>
           {!locked&&!isTBD&&(
             <input type="number" min="0" max="20" value={scoreVal}
               onChange={e=>setScore(e.target.value)}
@@ -1238,11 +1237,6 @@ function KnockoutBracket({matches,predictions,flags,onSave,locked,mySpecial}) {
         <div className="bracket-gap"/>
         <div className="bracket-center" style={{height:880,display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",padding:"0 4px"}}>
           <div className="bracket-center-hdr">🏆 Finale</div>
-          {mySpecial?.champion&&(
-            <div style={{fontSize:10,color:"var(--muted)",textAlign:"center",marginBottom:4}}>
-              Spesialtips: {champFlag} {mySpecial.champion} — tipp gjerne noko anna
-            </div>
-          )}
           <div style={{width:"100%"}}>{card(KO_BRACKET.final[0])}</div>
           <div style={{marginTop:36,width:"100%"}}>
             <div className="bracket-col-hdr">Bronsefinale</div>
@@ -1281,6 +1275,11 @@ function KnockoutView({matches,predictions,flags,onSave,mySpecial}) {
       <p style={{fontSize:12,color:"var(--muted)",lineHeight:1.55,marginBottom:20}}>
         Tipp det laget du trur går vidare frå kvar runde. Du kan i tillegg tippe stilling etter 90 minutt og få bonuspoeng — til dømes kan du tippe 1–1 på stilling og likevel velja kva lag du trur avanserer.
       </p>
+      {mySpecial?.champion&&(
+        <div style={{background:"var(--bg)",border:"1.5px solid var(--border)",borderRadius:"var(--r2)",padding:"8px 12px",marginBottom:16,fontSize:12,color:"var(--muted)"}}>
+          🌟 Spesialtips VM-meister: <strong>{flags[mySpecial.champion]||""} {mySpecial.champion}</strong> — du kan velje same eller eit anna lag i finale-slotten.
+        </div>
+      )}
       <KnockoutBracket matches={matches} predictions={predictions} flags={flags} onSave={onSave} locked={false} mySpecial={mySpecial}/>
     </div>
   );
