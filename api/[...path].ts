@@ -292,7 +292,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if ("error" in admin) return err(res, admin.error, admin.status);
     const uid = parseInt(adminUserPredMatch[1]);
     const preds = (await pool.query(
-      `SELECT p.match_id,p.result,m.home_team,m.away_team,m.stage,m.group_name,m.matchday,
+      `SELECT p.match_id,p.result,p.home_score_pred,p.away_score_pred,m.home_team,m.away_team,m.stage,m.group_name,m.matchday,
               m.match_date,m.match_time,m.label,m.home_score as actual_home,m.away_score as actual_away,m.status
        FROM predictions p JOIN matches m ON p.match_id=m.id
        WHERE p.user_id=$1 ORDER BY m.match_date,m.match_time,m.id`, [uid]

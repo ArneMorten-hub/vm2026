@@ -1305,10 +1305,11 @@ function LeaderboardView({currentUser}) {
   const max=Math.max(...data.map(u=>u.totalPoints),1);
   return(
     <div className="page">
-      <div className="prog-chips" style={{marginBottom:18}}>
-        <div className="prog-chip">Deltakere: <strong>{data.length}</strong></div>
-        <div className="prog-chip">Leder: <strong>{data[0]?.totalPoints||0}p</strong></div>
-        <div className="prog-chip">Oppdateres hvert 30s</div>
+      <div className="lb-legend" style={{marginBottom:18}}>
+        <span>⚽ Gruppe: 3p riktig utfall (H/U/B)</span>
+        <span>🏆 Sluttspill: 4–12p per runde · +3p rett stilling etter 90 min</span>
+        <span>📋 Tabellplass: 3p · +10p bonus for perfekt gruppe</span>
+        <span>🌟 Spesialtips: 10–20p</span>
       </div>
       <div className="lb-wrap">
         <div className="lb-hdr"><div>#</div><div>Deltaker</div><div>Poeng</div><div>Statistikk</div></div>
@@ -1336,12 +1337,6 @@ function LeaderboardView({currentUser}) {
             </div>
           </div>
         ))}
-      </div>
-      <div className="lb-legend">
-        <span>⚽ Gruppe: 3p riktig utfall (H/U/B)</span>
-        <span>🏆 Sluttspill: 4–12p per runde · +3p rett stilling etter 90 min</span>
-        <span>📋 Tabellplass: 3p · +10p bonus for perfekt gruppe</span>
-        <span>🌟 Spesialtips: 10–20p</span>
       </div>
     </div>
   );
@@ -1502,7 +1497,7 @@ function UserModal({userId,onClose,categories,flags}) {
           <div style={{fontSize:12,color:"var(--muted)",marginBottom:12}}>Ikke sendt inn ennå</div>
         )}
         <div className="modal-tabs">
-          {[["matches","⚽ Kamper"],["standings","📋 Tabell"],["special","🌟 Spesialtips"]].map(([k,l])=>(
+          {[["matches","⚽ Kamper"],["standings","📋 Tabell"],["knockout","🏆 Sluttspill"],["special","🌟 Spesialtips"]].map(([k,l])=>(
             <button key={k} className={`mtab ${tab===k?"on":""}`} onClick={()=>setTab(k)}>{l}</button>
           ))}
         </div>
@@ -1547,6 +1542,44 @@ function UserModal({userId,onClose,categories,flags}) {
             {!Object.keys(byGroup).length&&<div className="empty" style={{gridColumn:"1/-1"}}>Ingen tabellsvar</div>}
           </div>
         )}
+        {tab==="knockout"&&(()=>{
+          const STAGE_PTS={r32:4,r16:5,qf:6,sf:8,"3rd":6,final:12};
+          const STAGE_LBL={r32:"16-delsfinale",r16:"8-delsfinale",qf:"Kvartfinale",sf:"Semifinale","3rd":"Bronsefinale",final:"Finale"};
+          const koPreds=predictions.filter(p=>p.stage!=="group")
+            .sort((a,b)=>{const so=["r32","r16","qf","sf","3rd","final"];return so.indexOf(a.stage)-so.indexOf(b.stage)||a.match_id-b.match_id;});
+          return(
+            <div style={{maxHeight:"60vh",overflowY:"auto"}}>
+              <table className="pred-table">
+                <thead><tr><th>Kamp</th><th>Runde</th><th>Tips</th><th>Stilling</th><th>Fasit</th><th>Pts</th></tr></thead>
+                <tbody>
+                  {koPreds.map(p=>{
+                    const finished=p.status==="finished"&&p.actual_home!==null;
+                    const actR=finished?(p.actual_home>p.actual_away?"H":"B"):null;
+                    const correct=finished&&actR===p.result;
+                    const base=STAGE_PTS[p.stage]??4;
+                    const scoreBonus=finished&&correct&&p.home_score_pred!=null&&p.away_score_pred!=null&&p.home_score_pred===p.actual_home&&p.away_score_pred===p.actual_away?3:0;
+                    const pts=correct?base+scoreBonus:0;
+                    const predScore=p.home_score_pred!=null&&p.away_score_pred!=null?`${p.home_score_pred}–${p.away_score_pred}`:"–";
+                    const actScore=finished?`${p.actual_home}–${p.actual_away}`:"–";
+                    return(
+                      <tr key={p.match_id}>
+                        <td style={{fontWeight:700,fontSize:12}}>{p.label||`${p.home_team} – ${p.away_team}`}</td>
+                        <td style={{color:"var(--muted)",fontSize:11}}>{STAGE_LBL[p.stage]||p.stage}</td>
+                        <td><strong>{resLabel(p.result)}</strong></td>
+                        <td style={{fontSize:12}}>{predScore}</td>
+                        <td style={{fontSize:12}}>{finished?`${actScore} (${actR})`:"–"}</td>
+                        <td style={{color:finished?(correct?"var(--green)":"var(--red)"):"var(--dim)",fontWeight:700}}>
+                          {finished?(correct?`✓ ${pts}p`:"✗ 0p"):"–"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {!koPreds.length&&<tr><td colSpan="6"><div className="empty">Ingen sluttspilltips</div></td></tr>}
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
         {tab==="special"&&(
           <table className="pred-table">
             <thead><tr><th>Kategori</th><th>Svar</th></tr></thead>
