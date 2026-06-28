@@ -1574,6 +1574,17 @@ function AdminView({matches,categories,allTeams,flags,showToast,onRefresh}) {
   const [spAnswers,setSpAnswers]=useState({});const [spInputs,setSpInputs]=useState({});
   const [stAnswers,setStAnswers]=useState({});const [stInputs,setStInputs]=useState({});
   const [users,setUsers]=useState([]);const [selUser,setSelUser]=useState(null);
+  const [syncing,setSyncing]=useState(false);const [syncResult,setSyncResult]=useState(null);
+
+  async function runSync(){
+    setSyncing(true);setSyncResult(null);
+    try{
+      const r=await api("/api/sync",{method:"POST"});
+      setSyncResult(`✓ Synka ${r.updated} kampar (${r.total} frå ESPN)`);
+      onRefresh();
+    }catch(ex){setSyncResult("✗ "+ex.message);}
+    setSyncing(false);
+  }
 
   useEffect(()=>{
     api("/api/admin/special-answers").then(d=>{setSpAnswers(d);setSpInputs({...d});}).catch(()=>{});
@@ -1608,9 +1619,21 @@ function AdminView({matches,categories,allTeams,flags,showToast,onRefresh}) {
   return(
     <div className="page">
       <div className="admin-tabs">
-        {[["matches","⚽ Resultater"],["special","🌟 Spesialtips fasit"],["standings","📋 Tabellsvar fasit"],["users","👥 Brukere"]].map(([k,l])=>(
-          <button key={k} className={`atab ${tab===k?"on":""}`} onClick={()=>setTab(k)}>{l}</button>
-        ))}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,marginBottom:4}}>
+          <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+            {[["matches","⚽ Resultater"],["special","🌟 Spesialtips fasit"],["standings","📋 Tabellsvar fasit"],["users","👥 Brukere"]].map(([k,l])=>(
+              <button key={k} className={`atab ${tab===k?"on":""}`} onClick={()=>setTab(k)}>{l}</button>
+            ))}
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            {syncResult&&<span style={{fontSize:11,color:syncResult.startsWith("✓")?"var(--green)":"var(--red)"}}>{syncResult}</span>}
+            <button onClick={runSync} disabled={syncing}
+              style={{fontSize:12,fontWeight:700,padding:"5px 12px",borderRadius:"var(--r)",border:"1.5px solid var(--blue)",
+                background:"var(--blue-light)",color:"var(--blue)",cursor:syncing?"wait":"pointer"}}>
+              {syncing?"⏳ Synkar…":"🔄 Sync ESPN"}
+            </button>
+          </div>
+        </div>
       </div>
 
       {tab==="matches"&&(

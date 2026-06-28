@@ -450,5 +450,99 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
+  // ── ESPN sync (POST by admin, GET by Vercel cron) ──
+  if (path === "/api/sync") {
+    const cronSecret = process.env.CRON_SECRET;
+    const isCron = method === "GET" && cronSecret &&
+      req.headers["authorization"] === `Bearer ${cronSecret}`;
+    if (!isCron) {
+      const admin = await requireAdmin(pool, req.headers as any);
+      if ("error" in admin) return err(res, admin.error, admin.status);
+    }
+
+    const ESPN_NAMES: Record<string,string> = {
+      "United States": "USA",
+      "Côte d'Ivoire": "Ivory Coast", "Cote d'Ivoire": "Ivory Coast",
+      "Congo DR": "DR Congo", "Democratic Republic of Congo": "DR Congo",
+      "Cape Verde": "Cabo Verde",
+    };
+    const norm = (n: string) => ESPN_NAMES[n] || n;
+
+    // Fetch ESPN scoreboard for next 22 days in parallel
+    const today = new Date();
+    const dates = Array.from({length:22},(_,i)=>{
+      const d = new Date(today.getTime()+i*86400000);
+      return d.toISOString().slice(0,10).replace(/-/g,"");
+    });
+    const fetched = await Promise.allSettled(
+      dates.map(ds =>
+        fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=${ds}`)
+          .then(r => r.ok ? r.json() : null)
+      )
+    );
+    const events: any[] = [];
+    for (const f of fetched) {
+      if (f.status === "fulfilled" && f.value?.events) events.push(...f.value.events);
+    }
+
+    let updated = 0, notFound = 0;
+    for (const ev of events) {
+      const comp = ev.competitions?.[0];
+      if (!comp) continue;
+      const homeC = comp.competitors?.find((c:any) => c.homeAway === "home");
+      const awayC = comp.competitors?.find((c:any) => c.homeAway === "away");
+      if (!homeC || !awayC) continue;
+
+      const espnHome = norm(homeC.team.displayName);
+      const espnAway = norm(awayC.team.displayName);
+      const pre = comp.status.type.state === "pre";
+      const homeScore = pre ? null : (parseInt(homeC.score) ?? null);
+      const awayScore = pre ? null : (parseInt(awayC.score) ?? null);
+      const finished = comp.status.type.completed === true;
+      const live = comp.status.type.state === "in";
+      const status = finished ? "finished" : live ? "live" : "upcoming";
+      const evDate = ev.date?.slice(0,10);
+
+      // Try direct team name match
+      const direct = await pool.query(
+        "SELECT id FROM matches WHERE home_team=$1 AND away_team=$2", [espnHome, espnAway]
+      );
+      if (direct.rows.length > 0) {
+        await pool.query(
+          "UPDATE matches SET status=$1, home_score=$2, away_score=$3 WHERE id=$4",
+          [status, homeScore, awayScore, direct.rows[0].id]
+        );
+        updated++; continue;
+      }
+
+      // Try to fill a TBD slot in the correct stage
+      const txt = ((ev.name||"")+" "+(comp.notes||[]).map((n:any)=>n.text||"").join(" ")).toLowerCase();
+      let stage: string|null = null;
+      if (/round of 32|1\/16/.test(txt)) stage = "r32";
+      else if (/round of 16|1\/8/.test(txt)) stage = "r16";
+      else if (/quarter/.test(txt)) stage = "qf";
+      else if (/semi/.test(txt)) stage = "sf";
+      else if (/third|bronze/.test(txt)) stage = "3rd";
+      else if (/\bfinal\b/.test(txt)) stage = "final";
+
+      if (stage) {
+        const tbd = await pool.query(
+          `SELECT id FROM matches WHERE stage=$1 AND (home_team='TBD' OR away_team='TBD')
+           ORDER BY ABS(EXTRACT(EPOCH FROM (match_date::date - $2::date))) LIMIT 1`,
+          [stage, evDate]
+        );
+        if (tbd.rows.length > 0) {
+          await pool.query(
+            "UPDATE matches SET home_team=$1,away_team=$2,status=$3,home_score=$4,away_score=$5,match_date=$6 WHERE id=$7",
+            [espnHome, espnAway, status, homeScore, awayScore, evDate, tbd.rows[0].id]
+          );
+          updated++;
+        } else { notFound++; }
+      } else { notFound++; }
+    }
+
+    return ok(res, { ok: true, updated, notFound, total: events.length });
+  }
+
   return err(res, "Ikke funnet", 404);
 }
