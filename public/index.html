@@ -1282,7 +1282,7 @@ function KnockoutView({matches,predictions,flags,onSave,mySpecial}) {
         <div style={{fontSize:11,fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6}}>Slik gjer du det</div>
         <div style={{fontSize:12,color:"var(--muted)",lineHeight:1.7}}>
           <div>1. Trykk på laget du trur går vidare frå kvar kamp</div>
-          <div>2. Skriv inn stilling etter 90 min (valfritt) og få +3p bonuspoeng</div>
+          <div>2. Skriv inn riktig stilling etter 90 min og få 3 bonuspoeng ekstra</div>
           <div>3. Alt lagres automatisk — tips låses når fristen er ute</div>
         </div>
       </div>
@@ -1358,7 +1358,7 @@ function MyTipsView({matches,predictions,standings,mySpecial,categories,flags}) 
     <div className="page">
       <h2 style={{fontSize:20,fontWeight:800,marginBottom:16}}>📋 Mine tips</h2>
       <div className="modal-tabs">
-        {[["matches","⚽ Kamper"],["standings","📋 Tabell"],["special","🌟 Spesialtips"]].map(([k,l])=>(
+        {[["matches","⚽ Kamper"],["standings","📋 Tabell"],["knockout","🏆 Sluttspill"],["special","🌟 Spesialtips"]].map(([k,l])=>(
           <button key={k} className={`mtab ${tab===k?"on":""}`} onClick={()=>setTab(k)}>{l}</button>
         ))}
       </div>
@@ -1404,6 +1404,47 @@ function MyTipsView({matches,predictions,standings,mySpecial,categories,flags}) 
           {!Object.keys(byGroup).length&&<div className="empty">Ingen tabellsvar</div>}
         </div>
       )}
+      {tab==="knockout"&&(()=>{
+        const STAGE_PTS={r32:4,r16:5,qf:6,sf:8,"3rd":6,final:12};
+        const STAGE_LBL={r32:"16-delsfinale",r16:"8-delsfinale",qf:"Kvartfinale",sf:"Semifinale","3rd":"Bronsefinale",final:"Finale"};
+        const koMatches=[...matches].filter(m=>m.stage!=="group")
+          .sort((a,b)=>{const so=["r32","r16","qf","sf","3rd","final"];return so.indexOf(a.stage)-so.indexOf(b.stage)||a.id-b.id;});
+        const koWithPred=koMatches.filter(m=>predictions[m.id]?.result);
+        return(
+          <div style={{overflowX:"auto"}}>
+            <table className="pred-table">
+              <thead><tr><th>Kamp</th><th>Runde</th><th>Tips</th><th>Stilling</th><th>Fasit</th><th>Pts</th></tr></thead>
+              <tbody>
+                {koWithPred.map(m=>{
+                  const pred=predictions[m.id];
+                  const res=pred.result;
+                  const finished=m.status==="finished"&&m.home_score!==null;
+                  const actR=finished?(m.home_score>m.away_score?"H":"B"):null;
+                  const correct=finished&&actR===res;
+                  const base=STAGE_PTS[m.stage]??4;
+                  const scoreBonus=finished&&correct&&pred.home_score_pred!=null&&pred.away_score_pred!=null&&pred.home_score_pred===m.home_score&&pred.away_score_pred===m.away_score?3:0;
+                  const pts=correct?base+scoreBonus:0;
+                  const predScore=pred.home_score_pred!=null&&pred.away_score_pred!=null?`${pred.home_score_pred}–${pred.away_score_pred}`:"–";
+                  const actScore=finished?`${m.home_score}–${m.away_score}`:"–";
+                  return(
+                    <tr key={m.id}>
+                      <td style={{fontWeight:700,fontSize:12}}>{m.label||`${m.home_team} – ${m.away_team}`}</td>
+                      <td style={{color:"var(--muted)",fontSize:11}}>{STAGE_LBL[m.stage]||m.stage}</td>
+                      <td><strong>{res==="H"?"🏠 H":res==="B"?"✈️ B":"–"}</strong></td>
+                      <td style={{fontSize:12}}>{predScore}</td>
+                      <td style={{fontSize:12}}>{finished?`${actScore} (${actR==="H"?"H":"B"})`:"–"}</td>
+                      <td style={{color:finished?(correct?"var(--green)":"var(--red)"):"var(--dim)",fontWeight:700}}>
+                        {finished?(correct?`✓ ${pts}p`:"✗ 0p"):"–"}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {!koWithPred.length&&<tr><td colSpan="6"><div className="empty">Ingen sluttspilltips enno</div></td></tr>}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
       {tab==="special"&&(
         <table className="pred-table">
           <thead><tr><th>Kategori</th><th>Svar</th></tr></thead>
@@ -1752,7 +1793,7 @@ function App() {
 
   useEffect(()=>{window.scrollTo(0,0);},[tab]);
   useEffect(()=>{
-    if(user && !localStorage.getItem("vm2026_notice_v1")) setShowNotice(true);
+    if(user && !localStorage.getItem("vm2026_notice_v2")) setShowNotice(true);
   },[user]);
 
   if(loading) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh"}}><div className="spin"/></div>;
@@ -1832,18 +1873,18 @@ function App() {
           predictions={predictions} standings={standings} mySpecial={mySpecial}
           loading={submitLoading}/>}
 
-      {showNotice&&<div className="overlay" onClick={e=>e.target===e.currentTarget&&(localStorage.setItem("vm2026_notice_v1","1"),setShowNotice(false))}>
+      {showNotice&&<div className="overlay" onClick={e=>e.target===e.currentTarget&&(localStorage.setItem("vm2026_notice_v2","1"),setShowNotice(false))}>
         <div className="modal" style={{maxWidth:400,textAlign:"center",padding:"32px 28px"}}>
-          <div style={{fontSize:48,marginBottom:12}}>🛠️⚽</div>
-          <h2 style={{fontSize:20,fontWeight:700,marginBottom:12}}>Litt trøbbel i tårnet — no fiksa!</h2>
+          <div style={{fontSize:48,marginBottom:12}}>🏆⚽</div>
+          <h2 style={{fontSize:20,fontWeight:700,marginBottom:16}}>No er det klart for å tippe!</h2>
           <p style={{color:"var(--muted)",lineHeight:1.6,marginBottom:20}}>
-            Det var ein liten bug, men det er no korrigert så alt stemmer. 🎉
+            Byggmester beklager sein lansering, men dokke klarer uansett ikkje slå meg. 😄
           </p>
-          <p style={{color:"var(--muted)",lineHeight:1.6,marginBottom:24}}>
-            Stor takk til <strong>Marie</strong> som hadde full kontroll på tippinga og oppdaga feilen! 🏆
+          <p style={{color:"var(--muted)",lineHeight:1.6,marginBottom:24,fontWeight:600}}>
+            Lykke til! 🎉
           </p>
-          <button className="btn-primary" onClick={()=>{localStorage.setItem("vm2026_notice_v1","1");setShowNotice(false);}}>
-            Sjå kven som leder (mest sannsynleg Arne Morten) →
+          <button className="btn-primary" onClick={()=>{localStorage.setItem("vm2026_notice_v2","1");setShowNotice(false);}}>
+            La oss sjå på det! →
           </button>
         </div>
       </div>}
