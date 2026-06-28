@@ -1175,10 +1175,21 @@ function KnockoutBracket({matches,predictions,flags,onSave,locked,mySpecial}) {
   const byId={};
   for(const m of matches) byId[m.id]=m;
 
+  // SF losers feed the bronze final: left SF → home, right SF → away
+  const BRONZE_ID = KO_BRACKET["3rd"][0];
+  const BRONZE_SRC = {home: KO_BRACKET.leftSF[0], away: KO_BRACKET.rightSF[0]};
   function resolveTeam(id,side,preds){
     const m=byId[id]; if(!m) return "TBD";
     const t=side==="home"?m.home_team:m.away_team;
     if(t!=="TBD") return t;
+    // Bronze final teams come from SF losers
+    if(id===BRONZE_ID){
+      const sfId=BRONZE_SRC[side];
+      const pred=preds[sfId];
+      if(!pred) return "TBD";
+      // loser = the team NOT picked as winner
+      return resolveTeam(sfId,pred.result==="H"?"away":"home",preds);
+    }
     for(const [srcId,nxt] of Object.entries(BRACKET_NEXT)){
       if(nxt.nextId===id&&nxt.side===side){
         const pred=preds[Number(srcId)];
