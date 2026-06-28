@@ -1238,6 +1238,11 @@ function KnockoutBracket({matches,predictions,flags,onSave,locked,mySpecial}) {
         <div className="bracket-center" style={{height:880,display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",padding:"0 4px"}}>
           <div className="bracket-center-hdr">🏆 Finale</div>
           <div style={{width:"100%"}}>{card(KO_BRACKET.final[0])}</div>
+          {mySpecial?.champion&&(
+            <div style={{fontSize:10,color:"var(--muted)",textAlign:"center",marginTop:6,padding:"5px 8px",background:"var(--bg)",borderRadius:"var(--r)",border:"1px solid var(--border)",lineHeight:1.4}}>
+              💡 Du tippet {champFlag} {mySpecial.champion} som VM-meister i Spesialtips — treng ikkje vere det same her
+            </div>
+          )}
           <div style={{marginTop:36,width:"100%"}}>
             <div className="bracket-col-hdr">Bronsefinale</div>
             {card(KO_BRACKET["3rd"][0])}
@@ -1266,20 +1271,21 @@ function KnockoutView({matches,predictions,flags,onSave,mySpecial}) {
         </p>
         <KoCountdown/>
       </div>
-      <div style={{display:"flex",flexWrap:"wrap",gap:"4px 10px",marginBottom:10}}>
-        {[["16-del","4p"],["8-del","5p"],["Kvartfinale","6p"],["Semifinale","8p"],["Bronsefinale","6p"],["Finale","12p"]].map(([r,p])=>(
-          <span key={r} style={{fontSize:11,background:"var(--blue-light)",color:"var(--blue)",borderRadius:20,padding:"2px 10px",fontWeight:700}}>{r}: {p}</span>
-        ))}
-        <span style={{fontSize:11,background:"var(--blue-light)",color:"var(--blue)",borderRadius:20,padding:"2px 10px",fontWeight:700}}>+3p rett stilling (etter 90 min)</span>
-      </div>
-      <p style={{fontSize:12,color:"var(--muted)",lineHeight:1.55,marginBottom:20}}>
-        Tipp det laget du trur går vidare frå kvar runde. Du kan i tillegg tippe stilling etter 90 minutt og få bonuspoeng — til dømes kan du tippe 1–1 på stilling og likevel velja kva lag du trur avanserer.
-      </p>
-      {mySpecial?.champion&&(
-        <div style={{background:"var(--bg)",border:"1.5px solid var(--border)",borderRadius:"var(--r2)",padding:"8px 12px",marginBottom:16,fontSize:12,color:"var(--muted)"}}>
-          Du har tippet <strong>{flags[mySpecial.champion]||""} {mySpecial.champion}</strong> som VM-meister i Spesialtips — du kan fritt velje å tippe det same eller noko anna i finale-slotten under.
+      <div style={{background:"var(--white)",border:"1.5px solid var(--border)",borderRadius:"var(--r3)",padding:"16px 20px",marginBottom:20}}>
+        <div style={{fontSize:11,fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Poengsystem</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:"4px 8px",marginBottom:14}}>
+          {[["16-del","4p"],["8-del","5p"],["Kvartfinale","6p"],["Semifinale","8p"],["Bronsefinale","6p"],["Finale","12p"]].map(([r,p])=>(
+            <span key={r} style={{fontSize:11,background:"var(--blue-light)",color:"var(--blue)",borderRadius:20,padding:"2px 10px",fontWeight:700}}>{r}: {p}</span>
+          ))}
+          <span style={{fontSize:11,background:"var(--blue-light)",color:"var(--blue)",borderRadius:20,padding:"2px 10px",fontWeight:700}}>+3p rett stilling</span>
         </div>
-      )}
+        <div style={{fontSize:11,fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6}}>Slik gjer du det</div>
+        <div style={{fontSize:12,color:"var(--muted)",lineHeight:1.7}}>
+          <div>1. Trykk på laget du trur går vidare frå kvar kamp</div>
+          <div>2. Skriv inn stilling etter 90 min (valfritt) og få +3p bonuspoeng</div>
+          <div>3. Alt lagres automatisk — tips låses når fristen er ute</div>
+        </div>
+      </div>
       <KnockoutBracket matches={matches} predictions={predictions} flags={flags} onSave={onSave} locked={false} mySpecial={mySpecial}/>
     </div>
   );
