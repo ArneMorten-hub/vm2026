@@ -1277,7 +1277,7 @@ function KnockoutView({matches,predictions,flags,onSave,mySpecial}) {
       </p>
       {mySpecial?.champion&&(
         <div style={{background:"var(--bg)",border:"1.5px solid var(--border)",borderRadius:"var(--r2)",padding:"8px 12px",marginBottom:16,fontSize:12,color:"var(--muted)"}}>
-          🌟 Spesialtips VM-meister: <strong>{flags[mySpecial.champion]||""} {mySpecial.champion}</strong> — du kan velje same eller eit anna lag i finale-slotten.
+          Du har tippet <strong>{flags[mySpecial.champion]||""} {mySpecial.champion}</strong> som VM-meister i Spesialtips — du kan fritt velje å tippe det same eller noko anna i finale-slotten under.
         </div>
       )}
       <KnockoutBracket matches={matches} predictions={predictions} flags={flags} onSave={onSave} locked={false} mySpecial={mySpecial}/>

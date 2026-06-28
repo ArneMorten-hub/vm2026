@@ -86,13 +86,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (matchPredMatch && method === "POST") {
     const u = await requireAuth(pool, req.headers as any);
     if ("error" in u) return err(res, u.error, u.status);
-    if (u.submitted_at) return err(res, "Du har allerede sendt inn tippingen din – den er låst");
 
     const id = parseInt(matchPredMatch[1]);
     const match = (await pool.query<MatchRow>("SELECT * FROM matches WHERE id=$1", [id])).rows[0];
     if (!match) return err(res, "Kampen finnes ikke", 404);
     if (match.status === "finished") return err(res, "Kampen er ferdig spilt");
-    if (match.stage === "group" && isPastDeadline()) return err(res, "Fristen for gruppespill er ute");
+    if (match.stage === "group") {
+      if (u.submitted_at) return err(res, "Du har allerede sendt inn tippingen din – den er låst");
+      if (isPastDeadline()) return err(res, "Fristen for gruppespill er ute");
+    }
 
     const { result, homeScorePred, awayScorePred } = body as any;
     const validResults = match.stage === "group" ? ["H", "U", "B"] : ["H", "B"];
