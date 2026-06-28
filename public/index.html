@@ -443,6 +443,24 @@ const KO_BRACKET = {
   rightR32: [2290,2293, 2295,2296, 2303,2302, 2301,2304],
   "3rd":    [2319],
 };
+const BRACKET_NEXT = {
+  2291:{nextId:2305,side:"home"}, 2294:{nextId:2305,side:"away"},
+  2289:{nextId:2306,side:"home"}, 2292:{nextId:2306,side:"away"},
+  2300:{nextId:2307,side:"home"}, 2299:{nextId:2307,side:"away"},
+  2298:{nextId:2308,side:"home"}, 2297:{nextId:2308,side:"away"},
+  2305:{nextId:2313,side:"home"}, 2306:{nextId:2313,side:"away"},
+  2307:{nextId:2314,side:"home"}, 2308:{nextId:2314,side:"away"},
+  2313:{nextId:2317,side:"home"}, 2314:{nextId:2317,side:"away"},
+  2317:{nextId:2320,side:"home"},
+  2290:{nextId:2309,side:"home"}, 2293:{nextId:2309,side:"away"},
+  2295:{nextId:2310,side:"home"}, 2296:{nextId:2310,side:"away"},
+  2303:{nextId:2311,side:"home"}, 2302:{nextId:2311,side:"away"},
+  2301:{nextId:2312,side:"home"}, 2304:{nextId:2312,side:"away"},
+  2309:{nextId:2315,side:"home"}, 2310:{nextId:2315,side:"away"},
+  2311:{nextId:2316,side:"home"}, 2312:{nextId:2316,side:"away"},
+  2315:{nextId:2318,side:"home"}, 2316:{nextId:2318,side:"away"},
+  2318:{nextId:2320,side:"away"},
+};
 
 // ── Countdown ──
 function Countdown() {
@@ -484,18 +502,21 @@ function KoCountdown() {
     function tick(){
       const diff=KO_DEADLINE-new Date();
       if(diff<=0){setRem(null);return;}
-      setRem({hours:Math.floor(diff/3600000),mins:Math.floor((diff%3600000)/60000),secs:Math.floor((diff%60000)/1000)});
+      const d=Math.floor(diff/86400000);
+      setRem({days:d,hours:Math.floor((diff%86400000)/3600000),mins:Math.floor((diff%3600000)/60000),secs:Math.floor((diff%60000)/1000)});
     }
     tick();const id=setInterval(tick,1000);return()=>clearInterval(id);
   },[]);
-  if(!rem)return<div style={{fontSize:12,color:"var(--muted)",marginBottom:8}}>⏰ Tippingsfrist er ute</div>;
+  if(!rem)return<div className="deadline-passed">⏰ Tippingsfrist er ute</div>;
   const p=n=>String(n).padStart(2,"0");
   return(
-    <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
-      <span style={{fontSize:12,color:"var(--amber)",fontWeight:700}}>⏳ Frist kl. 21:00 i dag:</span>
-      <span style={{fontSize:14,fontWeight:800,color:"var(--amber)",fontVariantNumeric:"tabular-nums"}}>
-        {p(rem.hours)}:{p(rem.mins)}:{p(rem.secs)}
-      </span>
+    <div className="countdown">
+      {rem.days>0&&<><div className="cd-unit"><span className="cd-num">{rem.days}</span><span className="cd-label">dager</span></div><span className="cd-sep">:</span></>}
+      <div className="cd-unit"><span className="cd-num">{p(rem.hours)}</span><span className="cd-label">timer</span></div>
+      <span className="cd-sep">:</span>
+      <div className="cd-unit"><span className="cd-num">{p(rem.mins)}</span><span className="cd-label">min</span></div>
+      <span className="cd-sep">:</span>
+      <div className="cd-unit"><span className="cd-num">{p(rem.secs)}</span><span className="cd-label">sek</span></div>
     </div>
   );
 }
@@ -624,17 +645,24 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
       {/* Sluttspill-kort øvst */}
       <div className="section-header" style={{marginBottom:10}}>
         <span className="section-title">🏆 Sluttspill</span>
-        <button className="btn-outline-sm" onClick={()=>onNav("knockout")}>Gå til tipping →</button>
+        {user.isAdmin&&<button className="btn-outline-sm" onClick={()=>onNav("knockout")}>Gå til tipping →</button>}
       </div>
-      <div className="dash-card" style={{borderColor:"rgba(245,158,11,.4)",marginBottom:24}}>
-        <div className="dash-card-icon">🏆</div>
-        <div className="dash-card-title">Tipp sluttspillet</div>
-        <div className="dash-card-sub">Tipp alle sluttspillkamper</div>
-        {new Date()>KO_DEADLINE
-          ? <div style={{fontSize:13,color:"var(--muted)",fontStyle:"italic",marginTop:8}}>🔒 Tipping er stengt</div>
-          : <><KoCountdown/><button className="btn-dash" style={{background:"var(--amber)",borderColor:"var(--amber)"}} onClick={()=>onNav("knockout")}>Tipp nå →</button></>
-        }
-      </div>
+      {user.isAdmin
+        ? <div className="dash-card" style={{borderColor:"rgba(59,130,246,.4)",marginBottom:24}}>
+            <div className="dash-card-icon">🏆</div>
+            <div className="dash-card-title">Tipp sluttspillet</div>
+            <div className="dash-card-sub">Tipp alle sluttspillkamper</div>
+            {new Date()>KO_DEADLINE
+              ? <div style={{fontSize:13,color:"var(--muted)",fontStyle:"italic",marginTop:8}}>🔒 Tipping er stengt</div>
+              : <><KoCountdown/><button className="btn-dash" onClick={()=>onNav("knockout")}>Tipp nå →</button></>
+            }
+          </div>
+        : <div className="dash-card" style={{borderColor:"rgba(59,130,246,.2)",marginBottom:24}}>
+            <div className="dash-card-icon">🏆</div>
+            <div className="dash-card-title">Sluttspill-tipping</div>
+            <div className="dash-card-sub" style={{marginTop:8}}>Arne Morten jobbar med saken, og det blir snart mogleg å tippe.</div>
+          </div>
+      }
 
       {/* Ledertavle — fremhevet øverst */}
       <div className="section-header" style={{marginBottom:10}}>
@@ -1077,8 +1105,10 @@ function SpecialView({categories,allTeams,mySpecial,onSave,showToast,locked,onNa
 
 // ── Leaderboard ──
 // ── Knockout Bracket ──
-function KnockoutMatchCard({match,pred,flags,onSave,locked}) {
-  const isTBD = match.home_team==="TBD"||match.away_team==="TBD";
+function KnockoutMatchCard({match,pred,flags,onSave,locked,effectiveHome,effectiveAway}) {
+  const effHome = effectiveHome ?? match.home_team;
+  const effAway = effectiveAway ?? match.away_team;
+  const isTBD = effHome==="TBD"||effAway==="TBD";
   const res = pred?.result;
   const [hsp,setHsp]=useState(pred?.home_score_pred!=null?String(pred.home_score_pred):"");
   const [asp,setAsp]=useState(pred?.away_score_pred!=null?String(pred.away_score_pred):"");
@@ -1102,54 +1132,71 @@ function KnockoutMatchCard({match,pred,flags,onSave,locked}) {
     try{await onSave(match.id,res,h,a);}finally{setSaving(false);}
   }
 
-  const hf=flags[match.home_team]||"";
-  const af=flags[match.away_team]||"";
+  const hf=flags[effHome]||"";
+  const af=flags[effAway]||"";
   const finished=match.status==="finished";
   const actual=finished&&match.home_score!=null?(match.home_score>match.away_score?"H":"B"):null;
 
   return(
-    <div style={{background:"var(--white)",border:"1.5px solid var(--border)",borderRadius:"var(--r2)",padding:"10px 12px",marginBottom:8,opacity:isTBD?0.5:1}}>
-      <div style={{fontSize:11,color:"var(--muted)",marginBottom:6,fontWeight:600}}>
+    <div style={{background:"var(--white)",border:"1.5px solid var(--border)",borderRadius:"var(--r2)",padding:"8px 10px",marginBottom:8,opacity:isTBD?0.45:1}}>
+      <div style={{fontSize:10,color:"var(--muted)",marginBottom:5,fontWeight:600}}>
         {match.label}
         {finished&&<span style={{marginLeft:6,color:"var(--green)",fontWeight:700}}>{match.home_score}–{match.away_score}</span>}
       </div>
-      <div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:8}}>
-        {[{team:match.home_team,flag:hf,r:"H"},{team:match.away_team,flag:af,r:"B"}].map(({team,flag,r})=>(
-          <button key={r} onClick={()=>pick(r)} disabled={locked||isTBD||saving}
-            style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:"var(--r)",border:`2px solid ${res===r?"var(--blue)":actual===r?"var(--green)":"var(--border)"}`,background:res===r?"var(--blue-light)":actual===r?"var(--green-light)":"var(--white)",cursor:locked||isTBD?"default":"pointer",textAlign:"left",fontWeight:res===r?700:400,fontSize:13}}>
-            <span>{flag}</span>
-            <span style={{flex:1}}>{team}</span>
-            {res===r&&<span style={{fontSize:11,color:"var(--blue)",fontWeight:700}}>✓</span>}
-            {actual===r&&res!==r&&<span style={{fontSize:11,color:"var(--green)"}}>✓</span>}
-          </button>
-        ))}
-      </div>
-      {!locked&&!isTBD&&(
-        <div style={{display:"flex",alignItems:"center",gap:6}}>
-          <span style={{fontSize:11,color:"var(--muted)"}}>Stilling:</span>
-          <input type="number" min="0" max="20" value={hsp} onChange={e=>setHsp(e.target.value)} onBlur={saveScore}
-            style={{width:38,textAlign:"center",fontSize:13,padding:"3px 4px",border:"1px solid var(--border)",borderRadius:6}}/>
-          <span style={{color:"var(--muted)"}}>–</span>
-          <input type="number" min="0" max="20" value={asp} onChange={e=>setAsp(e.target.value)} onBlur={saveScore}
-            style={{width:38,textAlign:"center",fontSize:13,padding:"3px 4px",border:"1px solid var(--border)",borderRadius:6}}/>
-          {(hsp!==""&&asp!=="")&&<span style={{fontSize:11,color:"var(--green)"}}>+3p</span>}
-        </div>
-      )}
+      {[
+        {team:effHome,flag:hf,r:"H",scoreVal:hsp,setScore:setHsp},
+        {team:effAway,flag:af,r:"B",scoreVal:asp,setScore:setAsp},
+      ].map(({team,flag,r,scoreVal,setScore})=>(
+        <button key={r} onClick={()=>pick(r)} disabled={locked||isTBD||saving}
+          style={{display:"flex",alignItems:"center",gap:5,padding:"4px 6px",borderRadius:"var(--r)",
+            border:`2px solid ${res===r?"var(--blue)":actual===r?"var(--green)":"var(--border)"}`,
+            background:res===r?"var(--blue-light)":actual===r?"var(--green-light)":"var(--white)",
+            cursor:locked||isTBD?"default":"pointer",width:"100%",textAlign:"left",marginBottom:3}}>
+          <span style={{fontSize:13}}>{flag}</span>
+          <span style={{flex:1,fontSize:11,fontWeight:res===r?700:400}}>{team}</span>
+          {res===r&&<span style={{fontSize:9,color:"var(--blue)"}}>✓</span>}
+          {actual===r&&res!==r&&<span style={{fontSize:9,color:"var(--green)"}}>✓</span>}
+          {!locked&&!isTBD&&(
+            <input type="number" min="0" max="20" value={scoreVal}
+              onChange={e=>{e.stopPropagation();setScore(e.target.value);}}
+              onBlur={e=>{e.stopPropagation();saveScore();}}
+              onClick={e=>e.stopPropagation()}
+              style={{width:28,textAlign:"center",fontSize:11,padding:"1px 2px",border:"1px solid var(--border)",borderRadius:4,background:"var(--bg)"}}/>
+          )}
+        </button>
+      ))}
+      {(!locked&&!isTBD&&hsp!==""&&asp!=="")&&<div style={{fontSize:9,color:"var(--green)",textAlign:"right",marginTop:2}}>+3p for rett stilling</div>}
       {(pred?.home_score_pred!=null)&&locked&&(
-        <div style={{fontSize:11,color:"var(--muted)"}}>Stilling: {pred.home_score_pred}–{pred.away_score_pred}</div>
+        <div style={{fontSize:10,color:"var(--muted)",marginTop:3}}>Stilling: {pred.home_score_pred}–{pred.away_score_pred}</div>
       )}
     </div>
   );
 }
 
-function KnockoutBracket({matches,predictions,flags,onSave,locked}) {
+function KnockoutBracket({matches,predictions,flags,onSave,locked,mySpecial}) {
   const byId={};
   for(const m of matches) byId[m.id]=m;
 
+  function resolveTeam(id,side,preds){
+    const m=byId[id]; if(!m) return "TBD";
+    const t=side==="home"?m.home_team:m.away_team;
+    if(t!=="TBD") return t;
+    for(const [srcId,nxt] of Object.entries(BRACKET_NEXT)){
+      if(nxt.nextId===id&&nxt.side===side){
+        const pred=preds[Number(srcId)];
+        if(!pred) return "TBD";
+        return resolveTeam(Number(srcId),pred.result==="H"?"home":"away",preds);
+      }
+    }
+    return "TBD";
+  }
+
   function card(id){
-    const m=byId[id];
-    if(!m) return null;
-    return<KnockoutMatchCard key={id} match={m} pred={predictions[id]} flags={flags} onSave={onSave} locked={locked}/>;
+    const m=byId[id]; if(!m) return null;
+    const effHome=resolveTeam(id,"home",predictions);
+    const effAway=resolveTeam(id,"away",predictions);
+    return<KnockoutMatchCard key={id} match={m} pred={predictions[id]} flags={flags}
+      onSave={onSave} locked={locked} effectiveHome={effHome} effectiveAway={effAway}/>;
   }
 
   function col(ids,label,connCls,pairSize=2){
@@ -1167,6 +1214,8 @@ function KnockoutBracket({matches,predictions,flags,onSave,locked}) {
     );
   }
 
+  const champFlag = mySpecial?.champion ? (flags[mySpecial.champion]||"") : "";
+
   return(
     <div style={{overflowX:"auto"}}>
       <div className="bracket-sym">
@@ -1180,8 +1229,15 @@ function KnockoutBracket({matches,predictions,flags,onSave,locked}) {
         <div className="bracket-gap"/>
         <div className="bracket-center">
           <div className="bracket-center-hdr">🏆 Finale</div>
-          <div className="bracket-pair">{card(KO_BRACKET.final[0])}</div>
-          <div style={{marginTop:24}}>
+          <div style={{background:"var(--white)",border:"2px solid var(--blue)",borderRadius:"var(--r2)",padding:"10px 12px",marginBottom:4,minWidth:160}}>
+            <div style={{fontSize:10,color:"var(--muted)",marginBottom:6,fontWeight:600,textTransform:"uppercase"}}>VM-mester (Spesialtips)</div>
+            {mySpecial?.champion
+              ? <div style={{fontWeight:700,fontSize:14}}>{champFlag} {mySpecial.champion}</div>
+              : <div style={{color:"var(--muted)",fontSize:12,fontStyle:"italic"}}>Ikkje tippet</div>
+            }
+            <div style={{fontSize:10,color:"var(--blue)",marginTop:6}}>→ Endre i Spesialtips-fana</div>
+          </div>
+          <div style={{marginTop:20}}>
             <div className="bracket-col-hdr">Bronsefinale</div>
             <div className="bracket-pair">{card(KO_BRACKET["3rd"][0])}</div>
           </div>
@@ -1199,21 +1255,23 @@ function KnockoutBracket({matches,predictions,flags,onSave,locked}) {
   );
 }
 
-function KnockoutView({matches,predictions,flags,onSave}) {
+function KnockoutView({matches,predictions,flags,onSave,mySpecial}) {
   return(
     <div className="page">
-      <h2 style={{fontSize:20,fontWeight:800,marginBottom:6}}>🏆 Sluttspill</h2>
-      <KoCountdown/>
-      <p style={{fontSize:13,color:"var(--muted)",marginTop:4,marginBottom:12}}>
-        Tipp vinneren av kvar sluttspillkamp – frå dei ekte 16-delsfinale-laga og heilt til finalen.
-      </p>
+      <div style={{background:"linear-gradient(135deg,var(--blue),var(--blue2))",color:"white",borderRadius:"var(--r3)",padding:"24px",marginBottom:20,textAlign:"center"}}>
+        <h2 style={{fontSize:20,fontWeight:800,marginBottom:6}}>🏆 Sluttspill</h2>
+        <p style={{fontSize:13,opacity:.9,marginBottom:14}}>
+          Tipp vinneren av kvar sluttspillkamp – frå dei ekte 16-delsfinale-laga og heilt til finalen.
+        </p>
+        <KoCountdown/>
+      </div>
       <div style={{display:"flex",flexWrap:"wrap",gap:"4px 10px",marginBottom:20}}>
-        {[["16-del","4p"],["8-del","5p"],["Kvartfinale","6p"],["Semifinale","8p"],["Finale","12p"]].map(([r,p])=>(
+        {[["16-del","4p"],["8-del","5p"],["Kvartfinale","6p"],["Semifinale","8p"],["Bronsefinale","6p"]].map(([r,p])=>(
           <span key={r} style={{fontSize:11,background:"var(--blue-light)",color:"var(--blue)",borderRadius:20,padding:"2px 10px",fontWeight:700}}>{r}: {p}</span>
         ))}
         <span style={{fontSize:11,background:"var(--green-light)",color:"var(--green-dark)",borderRadius:20,padding:"2px 10px",fontWeight:700}}>+3p rett stilling</span>
       </div>
-      <KnockoutBracket matches={matches} predictions={predictions} flags={flags} onSave={onSave} locked={false}/>
+      <KnockoutBracket matches={matches} predictions={predictions} flags={flags} onSave={onSave} locked={false} mySpecial={mySpecial}/>
     </div>
   );
 }
@@ -1690,7 +1748,7 @@ function App() {
   const navTabs=[
     {id:"home",label:"🏠 Hjem"},
     {id:"groups",label:"⚽ Gruppespill"},
-    {id:"knockout",label:"🏆 Sluttspill"},
+    ...(user.isAdmin?[{id:"knockout",label:"🏆 Sluttspill"}]:[]),
     {id:"special",label:"🌟 Spesialtips"},
     {id:"mytips",label:"📋 Mine tips"},
     {id:"leaderboard",label:"📊 Ledertavle"},
@@ -1736,8 +1794,8 @@ function App() {
           onSave={handleSave} onStandingSave={handleStandingSave} locked={isLocked}
           onBack={()=>setSelectedGroup(null)} onNav={g=>setSelectedGroup(g)}/>}
 
-      {tab==="knockout"&&
-        <KnockoutView matches={matches} predictions={predictions} flags={flags} onSave={handleSave}/>}
+      {tab==="knockout"&&user.isAdmin&&
+        <KnockoutView matches={matches} predictions={predictions} flags={flags} onSave={handleSave} mySpecial={mySpecial}/>}
 
       {tab==="special"&&
         <SpecialView categories={categories} allTeams={allTeams} mySpecial={mySpecial}
