@@ -223,6 +223,13 @@ nav::-webkit-scrollbar{display:none}
 .ko-locked-sub{font-size:14px;color:var(--muted);line-height:1.6}
 .ko-locked-date{display:inline-block;background:var(--blue-light);color:var(--blue);font-weight:700;font-size:14px;padding:6px 18px;border-radius:20px;margin-top:12px}
 
+/* ── Bracket tree ── */
+.bracket-tree{display:flex;gap:0;align-items:flex-start;padding-bottom:8px}
+.bracket-col-hdr{font-weight:700;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;padding:0 4px}
+.bracket-pair{position:relative;margin-bottom:8px}
+.bracket-pair.has-conn::after{content:"";position:absolute;right:-18px;top:25%;bottom:25%;border-right:2px solid var(--border2);border-top:2px solid var(--border2);border-bottom:2px solid var(--border2);}
+.bracket-gap{width:18px;flex-shrink:0}
+
 /* ── Special ── */
 .special-hero{background:linear-gradient(135deg,var(--blue),var(--blue2));color:white;border-radius:var(--r3);padding:24px;margin-bottom:24px;text-align:center}
 .special-hero h2{font-size:20px;font-weight:800;margin-bottom:4px}
@@ -419,6 +426,16 @@ const toNorskTid = (dateStr, timeStr) => timeStr||"";
 const rankIcon = i => ["🥇","🥈","🥉"][i] ?? `${i+1}.`;
 const isPastDeadline = () => new Date() > DEADLINE;
 
+const KO_DEADLINE = new Date("2026-06-28T19:00:00.000Z"); // 21:00 CEST
+const KO_BRACKET = {
+  r32:   [2289,2292, 2290,2291, 2293,2296, 2294,2295, 2297,2300, 2298,2299, 2301,2304, 2302,2303],
+  r16:   [2305,2306, 2307,2308, 2309,2310, 2311,2312],
+  qf:    [2313,2314, 2315,2316],
+  sf:    [2317,2318],
+  "3rd": [2319],
+  final: [2320],
+};
+
 // ── Countdown ──
 function Countdown() {
   const [rem,setRem] = useState(null);
@@ -448,6 +465,29 @@ function Countdown() {
       <div className="cd-unit"><span className="cd-num">{p(rem.mins)}</span><span className="cd-label">min</span></div>
       <span className="cd-sep">:</span>
       <div className="cd-unit"><span className="cd-num">{p(rem.secs)}</span><span className="cd-label">sek</span></div>
+    </div>
+  );
+}
+
+// ── KoCountdown ──
+function KoCountdown() {
+  const [rem,setRem]=useState(null);
+  useEffect(()=>{
+    function tick(){
+      const diff=KO_DEADLINE-new Date();
+      if(diff<=0){setRem(null);return;}
+      setRem({hours:Math.floor(diff/3600000),mins:Math.floor((diff%3600000)/60000),secs:Math.floor((diff%60000)/1000)});
+    }
+    tick();const id=setInterval(tick,1000);return()=>clearInterval(id);
+  },[]);
+  if(!rem)return<div style={{fontSize:12,color:"var(--muted)",marginBottom:8}}>⏰ Tippingsfrist er ute</div>;
+  const p=n=>String(n).padStart(2,"0");
+  return(
+    <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
+      <span style={{fontSize:12,color:"var(--amber)",fontWeight:700}}>⏳ Frist kl. 21:00 i dag:</span>
+      <span style={{fontSize:14,fontWeight:800,color:"var(--amber)",fontVariantNumeric:"tabular-nums"}}>
+        {p(rem.hours)}:{p(rem.mins)}:{p(rem.secs)}
+      </span>
     </div>
   );
 }
@@ -574,12 +614,9 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
         <p className="dash-greeting">Hei, {user.name}! 👋</p>
       </div>
       {isSubmitted&&(
-        <div style={{display:"flex",alignItems:"center",gap:12,background:"var(--green-light)",border:"1.5px solid rgba(5,150,105,.3)",borderRadius:"var(--r2)",padding:"12px 18px",marginBottom:20}}>
-          <span style={{fontSize:20}}>✅</span>
-          <div>
-            <div style={{fontSize:14,fontWeight:800,color:"var(--green-dark)"}}>Tipping sendt inn og låst!</div>
-            <div style={{fontSize:12,color:"var(--muted)"}}>Du kan se tippingen din, men ikke endre den lenger.</div>
-          </div>
+        <div style={{display:"flex",alignItems:"center",gap:12,background:"var(--green-light)",border:"1.5px solid rgba(5,150,105,.3)",borderRadius:"var(--r2)",padding:"10px 16px",marginBottom:16}}>
+          <span style={{fontSize:18}}>✅</span>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--green-dark)"}}>Gruppespill-tipping er låst</div>
         </div>
       )}
 
@@ -652,6 +689,19 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
           </div>
         </div>
       )}
+
+      {/* Sluttspill-kort */}
+      <div className="section-header" style={{marginBottom:10}}>
+        <span className="section-title">🏆 Sluttspill</span>
+        <button className="btn-outline-sm" onClick={()=>onNav("knockout")}>Gå til tipping →</button>
+      </div>
+      <div className="dash-card" style={{borderColor:"rgba(245,158,11,.4)",marginBottom:24}}>
+        <div className="dash-card-icon">🏆</div>
+        <div className="dash-card-title">Tippe sluttspillet</div>
+        <KoCountdown/>
+        <div className="dash-card-sub">Tips på alle 16-delsfinalar og heilt til finalen. +3p bonus for rett stilling.</div>
+        <button className="btn-dash" style={{background:"var(--amber)",borderColor:"var(--amber)"}} onClick={()=>onNav("knockout")}>Tippe nå →</button>
+      </div>
 
       {isSubmitted && (
         <div className="section-header" style={{marginBottom:10}}>
@@ -950,14 +1000,11 @@ function GroupsOverview({matches,predictions,standings,groupsMeta,onSelectGroup,
         <div className="section-header">
           <span className="section-title">🏆 Sluttspill</span>
         </div>
-        {currentUser?.isAdmin
-          ? <KnockoutBracket matches={matches} predictions={predictions} flags={flags||{}} onSave={onSave} locked={false}/>
-          : <div className="ko-locked">
-              <div className="ko-locked-icon">🔒</div>
-              <div className="ko-locked-title">Sluttspill åpner snart</div>
-              <div className="ko-locked-sub">Tippingen for sluttspillet opnar når alt er klart. Sjekk tilbake!</div>
-            </div>
-        }
+        <div className="ko-locked">
+          <div className="ko-locked-icon">🏆</div>
+          <div className="ko-locked-title">Sluttspill-tipping</div>
+          <div className="ko-locked-sub">Finn sluttspillet under fana «🏆 Sluttspill» i navigasjonsmenyen</div>
+        </div>
       </div>
       <div style={{textAlign:"center",marginTop:28}}>
         <button className="btn-dash" style={{maxWidth:280,margin:"0 auto"}} onClick={()=>onNavigate&&onNavigate("home")}>
@@ -1103,37 +1150,58 @@ function KnockoutMatchCard({match,pred,flags,onSave,locked}) {
 }
 
 function KnockoutBracket({matches,predictions,flags,onSave,locked}) {
-  const rounds=[
-    {key:"r32",label:"16-delsfinale"},
-    {key:"r16",label:"8-delsfinale"},
-    {key:"qf",label:"Kvartfinale"},
-    {key:"sf",label:"Semifinale"},
-    {key:"3rd",label:"Bronsefinale"},
-    {key:"final",label:"Finale"},
-  ];
-  const byStage={};
-  for(const r of rounds) byStage[r.key]=matches.filter(m=>m.stage===r.key).sort((a,b)=>a.id-b.id);
+  const byId={};
+  for(const m of matches) byId[m.id]=m;
 
-  return(
-    <div style={{overflowX:"auto",paddingBottom:8}}>
-      <div style={{display:"flex",gap:12,alignItems:"flex-start",minWidth:"max-content"}}>
-        {rounds.filter(r=>r.key!=="3rd").map(r=>(
-          <div key={r.key} style={{width:230,flexShrink:0}}>
-            <div style={{fontWeight:700,fontSize:13,color:"var(--muted)",marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>{r.label}</div>
-            {byStage[r.key].map(m=>(
-              <KnockoutMatchCard key={m.id} match={m} pred={predictions[m.id]} flags={flags} onSave={onSave} locked={locked}/>
-            ))}
+  function col(ids,label,pair) {
+    const groups=[];
+    for(let i=0;i<ids.length;i+=(pair?2:1)) groups.push(ids.slice(i,i+(pair?2:1)));
+    return(
+      <div style={{flexShrink:0,width:215}}>
+        <div className="bracket-col-hdr">{label}</div>
+        {groups.map((grp,gi)=>(
+          <div key={gi} className={`bracket-pair${pair&&groups.length>1?" has-conn":""}`}
+            style={{marginBottom:pair&&groups.length>1?20:4}}>
+            {grp.map(id=>{
+              const m=byId[id];
+              if(!m) return null;
+              return<KnockoutMatchCard key={id} match={m} pred={predictions[id]} flags={flags} onSave={onSave} locked={locked}/>;
+            })}
           </div>
         ))}
       </div>
-      {byStage["3rd"].length>0&&(
-        <div style={{marginTop:16,maxWidth:250}}>
-          <div style={{fontWeight:700,fontSize:13,color:"var(--muted)",marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Bronsefinale</div>
-          {byStage["3rd"].map(m=>(
-            <KnockoutMatchCard key={m.id} match={m} pred={predictions[m.id]} flags={flags} onSave={onSave} locked={locked}/>
-          ))}
-        </div>
-      )}
+    );
+  }
+
+  return(
+    <div style={{overflowX:"auto"}}>
+      <div className="bracket-tree">
+        {col(KO_BRACKET.r32,"16-delsfinale",true)}
+        <div className="bracket-gap"/>
+        {col(KO_BRACKET.r16,"8-delsfinale",true)}
+        <div className="bracket-gap"/>
+        {col(KO_BRACKET.qf,"Kvartfinale",true)}
+        <div className="bracket-gap"/>
+        {col(KO_BRACKET.sf,"Semifinale",true)}
+        <div className="bracket-gap"/>
+        {col(KO_BRACKET.final,"Finale",false)}
+      </div>
+      <div style={{maxWidth:215,marginTop:16}}>
+        {col(KO_BRACKET["3rd"],"Bronsefinale",false)}
+      </div>
+    </div>
+  );
+}
+
+function KnockoutView({matches,predictions,flags,onSave}) {
+  return(
+    <div className="page">
+      <div style={{marginBottom:16}}>
+        <h2 style={{fontSize:20,fontWeight:800,marginBottom:6}}>🏆 Sluttspill</h2>
+        <KoCountdown/>
+        <p style={{fontSize:13,color:"var(--muted)",marginTop:4}}>Tips på kvart lag heilt til VM-finalen. +3p bonus for rett stilling etter 90 min.</p>
+      </div>
+      <KnockoutBracket matches={matches} predictions={predictions} flags={flags} onSave={onSave} locked={false}/>
     </div>
   );
 }
@@ -1610,6 +1678,7 @@ function App() {
   const navTabs=[
     {id:"home",label:"🏠 Hjem"},
     {id:"groups",label:"⚽ Gruppespill"},
+    {id:"knockout",label:"🏆 Sluttspill"},
     {id:"special",label:"🌟 Spesialtips"},
     {id:"mytips",label:"📋 Mine tips"},
     {id:"leaderboard",label:"📊 Ledertavle"},
@@ -1654,6 +1723,9 @@ function App() {
           predictions={predictions} standings={standings} flags={flags}
           onSave={handleSave} onStandingSave={handleStandingSave} locked={isLocked}
           onBack={()=>setSelectedGroup(null)} onNav={g=>setSelectedGroup(g)}/>}
+
+      {tab==="knockout"&&
+        <KnockoutView matches={matches} predictions={predictions} flags={flags} onSave={handleSave}/>}
 
       {tab==="special"&&
         <SpecialView categories={categories} allTeams={allTeams} mySpecial={mySpecial}
