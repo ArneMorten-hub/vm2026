@@ -4,6 +4,6 @@
     { "source": "/api/:path*", "destination": "/api/handler" }
   ],
   "crons": [
-    { "path": "/api/sync", "schedule": "*/15 * * * *" }
+    { "path": "/api/sync", "schedule": "0 * * * *" }
   ]
 }
