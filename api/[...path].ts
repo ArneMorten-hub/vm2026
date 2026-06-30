@@ -190,7 +190,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // ── Leaderboard ───────────────────────────────────────────────────────────
   if (path === "/api/leaderboard") {
     const users = (await pool.query("SELECT id,name FROM users ORDER BY created_at")).rows;
-    const finishedMatches = (await pool.query<MatchRow>("SELECT *,match_winner FROM matches WHERE status='finished'")).rows;
+    const finishedMatches = (await pool.query<MatchRow>("SELECT * FROM matches WHERE status='finished'")).rows;
     const specialAnswers = Object.fromEntries(
       (await pool.query("SELECT category,value FROM special_answers")).rows.map((a: any) => [a.category, a.value.toLowerCase()])
     );

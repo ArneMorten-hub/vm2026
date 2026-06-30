@@ -625,12 +625,10 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
   const todayMatches = allSorted.filter(m=>m.match_date===todayStr&&m.home_team!=="TBD");
   const nextFuture = allSorted.find(m=>m.status!=="finished"&&m.match_date>todayStr&&m.home_team!=="TBD");
   const nextMatch = allSorted.find(m=>m.status!=="finished"&&m.home_team!=="TBD");
-  const lastFinished = allSorted.filter(m=>m.status==="finished"&&m.match_date!==todayStr).slice(-1);
-  // Vis dagens kamper + 1 siste avsluttet; ellers neste dags kamper
   const matchSlice = todayMatches.length>0
-    ? [...lastFinished, ...todayMatches]
+    ? todayMatches
     : nextFuture
-      ? [...lastFinished, ...allSorted.filter(m=>m.match_date===nextFuture.match_date&&m.home_team!=="TBD")]
+      ? allSorted.filter(m=>m.match_date===nextFuture.match_date&&m.home_team!=="TBD")
       : allSorted.filter(m=>m.status==="finished"&&m.home_team!=="TBD").slice(-3);
 
   const sliceIsKnockout = matchSlice.some(m=>m.stage!=="group");
@@ -1571,7 +1569,7 @@ function UserModal({userId,onClose,categories,flags,matches}) {
 // ── Admin ──
 function AdminView({matches,categories,allTeams,flags,showToast,onRefresh}) {
   const [tab,setTab]=useState("matches");
-  const [stage,setStage]=useState("group");const [group,setGroup]=useState("A");
+  const [stage,setStage]=useState("r32");const [group,setGroup]=useState("A");
   const [edits,setEdits]=useState({});
   const [spAnswers,setSpAnswers]=useState({});const [spInputs,setSpInputs]=useState({});
   const [stAnswers,setStAnswers]=useState({});const [stInputs,setStInputs]=useState({});
