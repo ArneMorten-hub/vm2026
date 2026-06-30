@@ -1411,38 +1411,119 @@ function MyTipsView({matches,predictions,standings,mySpecial,categories,flags}) 
         const koMatches=[...matches].filter(m=>m.stage!=="group")
           .sort((a,b)=>{const so=["r32","r16","qf","sf","3rd","final"];return so.indexOf(a.stage)-so.indexOf(b.stage)||a.id-b.id;});
         const koWithPred=koMatches.filter(m=>predictions[m.id]?.result);
+        // Compute per-match stats
+        const rows=koWithPred.map(m=>{
+          const pred=predictions[m.id];
+          const res=pred.result;
+          const finished=m.status==="finished"&&m.home_score!==null;
+          const actR=finished?(m.match_winner??(m.home_score>m.away_score?"H":"B")):null;
+          const correct=finished&&actR===res;
+          const base=STAGE_PTS[m.stage]??4;
+          const scoreBonus=finished&&correct&&pred.home_score_pred!=null&&pred.away_score_pred!=null&&pred.home_score_pred===m.home_score&&pred.away_score_pred===m.away_score?3:0;
+          const pts=correct?base+scoreBonus:0;
+          return{m,pred,res,finished,actR,correct,pts,scoreBonus};
+        });
+        const totalPts=rows.reduce((s,r)=>s+r.pts,0);
+        const nCorrect=rows.filter(r=>r.finished&&r.correct).length;
+        const nWrong=rows.filter(r=>r.finished&&!r.correct).length;
+        const nPending=rows.filter(r=>!r.finished).length;
+        const stageGroups={};
+        for(const row of rows){
+          const s=row.m.stage;
+          if(!stageGroups[s])stageGroups[s]=[];
+          stageGroups[s].push(row);
+        }
+        const stageOrder=["r32","r16","qf","sf","3rd","final"];
         return(
-          <div style={{overflowX:"auto"}}>
-            <table className="pred-table">
-              <thead><tr><th>Kamp</th><th>Runde</th><th>Tips</th><th>Stilling</th><th>Fasit</th><th>Pts</th></tr></thead>
-              <tbody>
-                {koWithPred.map(m=>{
-                  const pred=predictions[m.id];
-                  const res=pred.result;
-                  const finished=m.status==="finished"&&m.home_score!==null;
-                  const actR=finished?(m.home_score>m.away_score?"H":"B"):null;
-                  const correct=finished&&actR===res;
-                  const base=STAGE_PTS[m.stage]??4;
-                  const scoreBonus=finished&&correct&&pred.home_score_pred!=null&&pred.away_score_pred!=null&&pred.home_score_pred===m.home_score&&pred.away_score_pred===m.away_score?3:0;
-                  const pts=correct?base+scoreBonus:0;
-                  const predScore=pred.home_score_pred!=null&&pred.away_score_pred!=null?`${pred.home_score_pred}–${pred.away_score_pred}`:"–";
-                  const actScore=finished?`${m.home_score}–${m.away_score}`:"–";
-                  return(
-                    <tr key={m.id}>
-                      <td style={{fontWeight:700,fontSize:12}}>{m.label||`${m.home_team} – ${m.away_team}`}</td>
-                      <td style={{color:"var(--muted)",fontSize:11}}>{STAGE_LBL[m.stage]||m.stage}</td>
-                      <td><strong>{res==="H"?"🏠 H":res==="B"?"✈️ B":"–"}</strong></td>
-                      <td style={{fontSize:12}}>{predScore}</td>
-                      <td style={{fontSize:12}}>{finished?`${actScore} (${actR==="H"?"H":"B"})`:"–"}</td>
-                      <td style={{color:finished?(correct?"var(--green)":"var(--red)"):"var(--dim)",fontWeight:700}}>
-                        {finished?(correct?`✓ ${pts}p`:"✗ 0p"):"–"}
-                      </td>
-                    </tr>
-                  );
-                })}
-                {!koWithPred.length&&<tr><td colSpan="6"><div className="empty">Ingen sluttspilltips enno</div></td></tr>}
-              </tbody>
-            </table>
+          <div>
+            {/* Summary bar */}
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16,padding:"12px 14px",background:"var(--bg)",borderRadius:"var(--r2)",border:"1px solid var(--border)"}}>
+              <span style={{fontSize:13,fontWeight:700,color:"var(--green)"}}>✓ {nCorrect} riktige</span>
+              <span style={{color:"var(--border)"}}>|</span>
+              <span style={{fontSize:13,fontWeight:700,color:"var(--red)"}}>✗ {nWrong} feil</span>
+              <span style={{color:"var(--border)"}}>|</span>
+              <span style={{fontSize:13,fontWeight:700,color:"var(--muted)"}}>⏳ {nPending} ventar</span>
+              <span style={{marginLeft:"auto",fontSize:14,fontWeight:800,color:"var(--blue)"}}>Totalt: {totalPts}p</span>
+            </div>
+            {/* Cards per round */}
+            {!koWithPred.length&&<div className="empty">Ingen sluttspilltips enno</div>}
+            {stageOrder.filter(s=>stageGroups[s]?.length).map(s=>(
+              <div key={s} style={{marginBottom:16}}>
+                <div style={{fontSize:12,fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>
+                  {STAGE_LBL[s]||s}
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {stageGroups[s].map(({m,pred,res,finished,actR,correct,pts,scoreBonus})=>{
+                    const pickedHome=res==="H";
+                    const homeTeam=m.home_team==="TBD"?"TBD":m.home_team;
+                    const awayTeam=m.away_team==="TBD"?"TBD":m.away_team;
+                    const pickedTeam=pickedHome?homeTeam:awayTeam;
+                    const pickedFlag=flags[pickedTeam]||"";
+                    const wonTeam=actR==="H"?homeTeam:actR==="B"?awayTeam:null;
+                    const wonFlag=wonTeam?flags[wonTeam]||"":"";
+                    const hasPredScore=pred.home_score_pred!=null&&pred.away_score_pred!=null;
+                    const cardBorder=finished?(correct?"2px solid var(--green)":"2px solid var(--red)"):"1.5px solid var(--border)";
+                    const cardBg=finished?(correct?"var(--green-light)":nWrong>0?"var(--red-light, #fff0f0)":"var(--white)"):"var(--white)";
+                    return(
+                      <div key={m.id} style={{border:cardBorder,background:cardBg,borderRadius:"var(--r2)",padding:"10px 14px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+                        {/* Match label */}
+                        <div style={{minWidth:60,fontSize:11,color:"var(--muted)",fontWeight:600}}>{m.label||"–"}</div>
+                        {/* Teams */}
+                        <div style={{flex:1,minWidth:140}}>
+                          {[{team:homeTeam,r:"H"},{team:awayTeam,r:"B"}].map(({team,r})=>{
+                            const isPicked=res===r;
+                            const isWinner=actR===r;
+                            return(
+                              <div key={r} style={{display:"flex",alignItems:"center",gap:5,marginBottom:2}}>
+                                <span style={{fontSize:13,width:18,textAlign:"center"}}>{flags[team]||""}</span>
+                                <span style={{fontSize:12,fontWeight:isPicked?700:400,color:isPicked?"var(--blue)":isWinner&&finished?"var(--green)":"var(--fg)"}}>
+                                  {team}
+                                </span>
+                                {isPicked&&<span style={{fontSize:10,color:"var(--blue)",fontWeight:700}}>← tipp</span>}
+                                {isWinner&&finished&&!isPicked&&<span style={{fontSize:10,color:"var(--green)",fontWeight:700}}>← vann</span>}
+                                {isWinner&&finished&&isPicked&&<span style={{fontSize:10,color:"var(--green)",fontWeight:700}}>← vann ✓</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {/* Score prediction */}
+                        <div style={{textAlign:"center",minWidth:70}}>
+                          <div style={{fontSize:10,color:"var(--muted)",marginBottom:2}}>Din stilling</div>
+                          <div style={{fontSize:13,fontWeight:700,color:hasPredScore?"var(--blue)":"var(--dim)"}}>
+                            {hasPredScore?`${pred.home_score_pred}–${pred.away_score_pred}`:"–"}
+                          </div>
+                        </div>
+                        {/* Actual score */}
+                        <div style={{textAlign:"center",minWidth:70}}>
+                          <div style={{fontSize:10,color:"var(--muted)",marginBottom:2}}>Fasit</div>
+                          <div style={{fontSize:13,fontWeight:700,color:finished?"var(--fg)":"var(--dim)"}}>
+                            {finished?`${m.home_score}–${m.away_score}`:"⏳"}
+                          </div>
+                        </div>
+                        {/* Points badge */}
+                        <div style={{textAlign:"center",minWidth:52}}>
+                          {finished?(
+                            correct?(
+                              <div style={{background:"var(--green)",color:"white",borderRadius:"var(--r)",padding:"4px 10px",fontWeight:800,fontSize:14}}>
+                                +{pts}p
+                              </div>
+                            ):(
+                              <div style={{background:"var(--red,#e53e3e)",color:"white",borderRadius:"var(--r)",padding:"4px 10px",fontWeight:800,fontSize:14}}>
+                                0p
+                              </div>
+                            )
+                          ):(
+                            <div style={{background:"var(--bg)",color:"var(--muted)",borderRadius:"var(--r)",padding:"4px 10px",fontWeight:600,fontSize:13,border:"1px solid var(--border)"}}>
+                              –
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         );
       })()}
