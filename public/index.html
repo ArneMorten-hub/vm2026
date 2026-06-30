@@ -604,7 +604,6 @@ function SubmitModal({onClose,onConfirm,predictions,standings,mySpecial,loading}
 
 // ── Dashboard ──
 function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,flags,onNav,onNavGroup,onSubmit}) {
-  const groupMatches = matches.filter(m=>m.stage==="group");
   const tipped = Object.keys(predictions).length;
   const totalStand = 48; // 12×4
   const tippedStand = Object.values(standings).reduce((s,g)=>s+Object.values(g).filter(Boolean).length,0);
@@ -614,29 +613,32 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
   const isSubmitted = !!user.submittedAt;
   const past = isPastDeadline();
 
-  // Beregn dagens/neste kamper
-  const sortedGroup = [...groupMatches].sort((a,b)=>{
-    const ta=new Date(a.match_date+"T"+(a.match_time||"12:00"));
-    const tb=new Date(b.match_date+"T"+(b.match_time||"12:00"));
+  // Beregn dagens/neste kamper — alle stages
+  const allSorted = [...matches].sort((a,b)=>{
+    const ta=new Date(a.match_date+"T"+(a.match_time||"12:00")+"Z");
+    const tb=new Date(b.match_date+"T"+(b.match_time||"12:00")+"Z");
     return ta-tb;
   });
   // Dagens dato i norsk tid
   const nowNo = new Date(new Date().toLocaleString("en-US",{timeZone:"Europe/Oslo"}));
   const todayStr = [nowNo.getFullYear(),String(nowNo.getMonth()+1).padStart(2,"0"),String(nowNo.getDate()).padStart(2,"0")].join("-");
-  const todayMatches = sortedGroup.filter(m=>m.match_date===todayStr);
-  const nextFuture = sortedGroup.find(m=>m.status!=="finished"&&m.match_date>todayStr);
-  const nextMatch = sortedGroup.find(m=>m.status!=="finished");
-  const lastFinished = sortedGroup.filter(m=>m.status==="finished"&&m.match_date!==todayStr).slice(-1);
+  const todayMatches = allSorted.filter(m=>m.match_date===todayStr&&m.home_team!=="TBD");
+  const nextFuture = allSorted.find(m=>m.status!=="finished"&&m.match_date>todayStr&&m.home_team!=="TBD");
+  const nextMatch = allSorted.find(m=>m.status!=="finished"&&m.home_team!=="TBD");
+  const lastFinished = allSorted.filter(m=>m.status==="finished"&&m.match_date!==todayStr).slice(-1);
   // Vis dagens kamper + 1 siste avsluttet; ellers neste dags kamper
   const matchSlice = todayMatches.length>0
     ? [...lastFinished, ...todayMatches]
     : nextFuture
-      ? [...lastFinished, ...sortedGroup.filter(m=>m.match_date===nextFuture.match_date)]
-      : sortedGroup.slice(-3);
+      ? [...lastFinished, ...allSorted.filter(m=>m.match_date===nextFuture.match_date&&m.home_team!=="TBD")]
+      : allSorted.filter(m=>m.status==="finished"&&m.home_team!=="TBD").slice(-3);
 
+  const sliceIsKnockout = matchSlice.some(m=>m.stage!=="group");
   const resLabel = r => r==="H"?"Hjemme":r==="U"?"Uavgjort":"Borte";
   const resColor = r => r==="H"?"var(--green)":r==="U"?"var(--amber)":"var(--blue)";
-  const sectionTitle = todayMatches.length>0 ? "⚽ Dagens kamper" : "⚽ Neste kamper";
+  const sectionTitle = todayMatches.length>0
+    ? (sliceIsKnockout?"🏆 Dagens sluttspillkampar":"⚽ Dagens kampar")
+    : "⚽ Neste kampar";
 
   return(
     <div className="page">
@@ -685,7 +687,7 @@ function Dashboard({user,matches,predictions,standings,mySpecial,leaderboard,fla
         <div style={{marginBottom:24}}>
           <div className="section-header" style={{marginBottom:10}}>
             <span className="section-title">{sectionTitle}</span>
-            <button className="btn-outline-sm" onClick={()=>onNav("groups")}>Se alle kamper →</button>
+            <button className="btn-outline-sm" onClick={()=>onNav(sliceIsKnockout?"knockout":"groups")}>{sliceIsKnockout?"Gå til sluttspill →":"Se alle kampar →"}</button>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {matchSlice.map(m=>{
@@ -1601,6 +1603,7 @@ function AdminView({matches,categories,allTeams,flags,showToast,onRefresh}) {
     if(e.ht)body.homeTeam=e.ht;if(e.at)body.awayTeam=e.at;
     if(e.time)body.matchTime=e.time;
     if(e.date)body.matchDate=e.date;
+    if(e.winner!==undefined)body.matchWinner=e.winner||null;
     if(!Object.keys(body).length)return;
     try{await api(`/api/admin/match/${id}`,{method:"POST",body:JSON.stringify(body)});showToast("✓ Kamp oppdatert");onRefresh();}
     catch(ex){showToast(ex.message,"bad");}
@@ -1657,7 +1660,7 @@ function AdminView({matches,categories,allTeams,flags,showToast,onRefresh}) {
             </>}
           </div>
           {filtered.map(m=>{
-            const e=edits[m.id]||{h:m.home_score??"",a:m.away_score??"",ht:"",at:"",time:m.match_time||"",date:m.match_date||""};
+            const e=edits[m.id]||{h:m.home_score??"",a:m.away_score??"",ht:"",at:"",time:m.match_time||"",date:m.match_date||"",winner:m.match_winner||""};
             const isTbd=m.home_team==="TBD";
             return(
               <div key={m.id} className="adm-match">
@@ -1672,6 +1675,13 @@ function AdminView({matches,categories,allTeams,flags,showToast,onRefresh}) {
                 <input className="adm-si" type="number" min="0" max="20" placeholder="H" value={e.h} onChange={ev=>setEdits(p=>({...p,[m.id]:{...e,h:ev.target.value}}))}/>
                 <span style={{color:"var(--dim)",fontWeight:800}}>–</span>
                 <input className="adm-si" type="number" min="0" max="20" placeholder="B" value={e.a} onChange={ev=>setEdits(p=>({...p,[m.id]:{...e,a:ev.target.value}}))}/>
+                {m.stage!=="group"&&(
+                  <select className="inp adm-si" style={{width:80,height:34,fontSize:11}} value={e.winner||""} onChange={ev=>setEdits(p=>({...p,[m.id]:{...e,winner:ev.target.value}}))}>
+                    <option value="">Auto</option>
+                    <option value="H">H vinn</option>
+                    <option value="B">B vinn</option>
+                  </select>
+                )}
                 <button className="btn-adm" onClick={()=>saveMatch(m.id)}>{m.status==="finished"?"Oppdater":"Sett resultat"}</button>
                 {m.status==="finished"&&<span className="adm-done">✓ Ferdig</span>}
               </div>

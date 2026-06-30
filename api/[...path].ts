@@ -23,6 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "OPTIONS") return res.status(200).end();
 
   const pool = getPool();
+  await pool.query("ALTER TABLE matches ADD COLUMN IF NOT EXISTS match_winner VARCHAR(1)");
   // Reconstruct path from Vercel's catch-all param
   const parts = Array.isArray(req.query.path) ? req.query.path : req.query.path ? [req.query.path] : [];
   const path = "/api/" + parts.join("/");
@@ -189,7 +190,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // ── Leaderboard ───────────────────────────────────────────────────────────
   if (path === "/api/leaderboard") {
     const users = (await pool.query("SELECT id,name FROM users ORDER BY created_at")).rows;
-    const finishedMatches = (await pool.query<MatchRow>("SELECT * FROM matches WHERE status='finished'")).rows;
+    const finishedMatches = (await pool.query<MatchRow>("SELECT *,match_winner FROM matches WHERE status='finished'")).rows;
     const specialAnswers = Object.fromEntries(
       (await pool.query("SELECT category,value FROM special_answers")).rows.map((a: any) => [a.category, a.value.toLowerCase()])
     );
@@ -232,11 +233,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const p = predMap[user.id]?.[m.id];
         if (p && m.home_score !== null && m.away_score !== null) {
           predicted++;
-          const pts = calcPoints(p.result, m.home_score, m.away_score, m.stage, p.hsp, p.asp);
+          const pts = calcPoints(p.result, m.home_score, m.away_score, m.stage, p.hsp, p.asp, m.match_winner);
           if (m.stage === "group") {
             matchPts += pts;
           } else {
-            const basePts = calcPoints(p.result, m.home_score, m.away_score, m.stage);
+            const basePts = calcPoints(p.result, m.home_score, m.away_score, m.stage, null, null, m.match_winner);
             knockoutPts += basePts;
             knockoutScoreBonus += pts - basePts;
           }
@@ -318,6 +319,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (body.status !== undefined) { updates.push(`status=$${vals.length+1}`); vals.push(body.status); }
     if (body.matchTime !== undefined) { updates.push(`match_time=$${vals.length+1}`); vals.push(body.matchTime); }
     if (body.matchDate !== undefined) { updates.push(`match_date=$${vals.length+1}`); vals.push(body.matchDate); }
+    if (body.matchWinner !== undefined) { updates.push(`match_winner=$${vals.length+1}`); vals.push(body.matchWinner || null); }
     if (!updates.length) return err(res, "Ingen felter å oppdatere");
     vals.push(id);
     await pool.query(`UPDATE matches SET ${updates.join(",")} WHERE id=$${vals.length}`, vals);
@@ -502,6 +504,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const live = comp.status.type.state === "in";
       const status = finished ? "finished" : live ? "live" : "upcoming";
       const evDate = ev.date?.slice(0,10);
+      const winnerC = finished ? comp.competitors?.find((c:any) => c.winner === true) : null;
+      const matchWinner = winnerC ? (winnerC.homeAway === "home" ? "H" : "B") : null;
 
       // Try direct team name match
       const direct = await pool.query(
@@ -509,8 +513,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
       if (direct.rows.length > 0) {
         await pool.query(
-          "UPDATE matches SET status=$1, home_score=$2, away_score=$3 WHERE id=$4",
-          [status, homeScore, awayScore, direct.rows[0].id]
+          "UPDATE matches SET status=$1,home_score=$2,away_score=$3,match_winner=$4 WHERE id=$5",
+          [status, homeScore, awayScore, matchWinner, direct.rows[0].id]
         );
         updated++; continue;
       }
@@ -533,8 +537,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         );
         if (tbd.rows.length > 0) {
           await pool.query(
-            "UPDATE matches SET home_team=$1,away_team=$2,status=$3,home_score=$4,away_score=$5,match_date=$6 WHERE id=$7",
-            [espnHome, espnAway, status, homeScore, awayScore, evDate, tbd.rows[0].id]
+            "UPDATE matches SET home_team=$1,away_team=$2,status=$3,home_score=$4,away_score=$5,match_date=$6,match_winner=$7 WHERE id=$8",
+            [espnHome, espnAway, status, homeScore, awayScore, evDate, matchWinner, tbd.rows[0].id]
           );
           updated++;
         } else { notFound++; }
